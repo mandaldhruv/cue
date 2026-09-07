@@ -1,100 +1,229 @@
-# vinext-starter
+# Cue
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+> Study smarter. Stress less.
 
-## Prerequisites
+Cue is a premium study platform designed for BMS students. It brings subject-wise syllabus, notes, important topics, PYQs, flashcards, resources and feedback into one calm, organised study space.
 
-- Node.js `>=22.13.0`
+Instead of searching through WhatsApp groups, Telegram channels, folders and random links, students can open a subject and start studying.
 
-## Quick Start
+---
+
+## What Cue Solves
+
+Study material is often scattered across multiple places, especially before exams.
+
+Cue helps students find the right material quickly by organising it semester-wise and subject-wise in one place.
+
+- Syllabus and units
+- Notes and revision material
+- Important / exam-focus topics
+- Recommended resources
+- Previous-year question papers
+- Flashcards for active recall
+- Private student feedback
+
+---
+
+## Key Features
+
+### Student Experience
+
+- BMS-focused, mobile-first study platform
+- Semester and subject-wise organisation
+- Dedicated subject workspaces
+- Published syllabus, notes, important topics and resources
+- Previous-year paper library with PDF preview and download
+- Subject-based flashcard decks for active recall
+- Clear empty and coming-soon states when content is not available
+- Private feedback form for student suggestions and issue reporting
+- Educator testimonials managed by the admin
+- Responsive experience across mobile, tablet and desktop
+
+### Admin Dashboard
+
+Cue includes a private admin workspace for managing all study material without editing code.
+
+| Area | Admin capabilities |
+| --- | --- |
+| Dashboard | View live subjects, content status, semesters and feedback summary |
+| Semesters | Create, reorder and publish semesters |
+| Subjects | Add, edit, publish and reorder subjects |
+| Study Content | Manage syllabus, notes, important topics and resources |
+| Flashcards | Build, edit, reorder and publish flashcard decks |
+| PYQs & PDFs | Upload, replace, publish and manage question-paper PDFs |
+| Feedback | Review private student feedback and update review status |
+| Testimonials | Add approved educator testimonials with optional headshots |
+
+---
+
+## Flashcards: A Core Cue Feature
+
+Cue flashcards are designed around the same study material available inside Cue.
+
+This makes revision more focused:
+
+1. Study the notes and resources.
+2. Open the related flashcards.
+3. Recall important concepts through active revision.
+
+The goal is not just to store content, but to help students revise it properly.
+
+---
+
+## Tech Stack
+
+- **Framework:** Next.js
+- **Language:** TypeScript
+- **Styling:** Custom CSS
+- **Backend:** InsForge
+- **Database:** PostgreSQL via InsForge
+- **Authentication:** InsForge Auth
+- **Storage:** InsForge Storage for PDF papers and testimonial images
+- **Deployment:** InsForge Deployments
+
+---
+
+## Project Structure
+
+```text
+app/
+├── admin/                 # Private admin dashboard
+├── about/                 # About Cue page
+├── feedback/              # Feedback form and testimonials
+├── flashcards/            # Flashcard library and card player
+├── pyqs/                  # Previous-year paper library
+├── subjects/              # Semester, subject and study workspace pages
+├── components.tsx         # Shared navigation, footer and UI components
+├── data.ts                # Public navigation and display data
+├── enhancements.css       # Premium UI and responsive styling
+└── lib/                   # InsForge and public-content utilities
+
+migrations/                # Database schema and access-control migrations
+public/                    # Logo, favicon and visual assets
+PRD.md                     # Product requirements document
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js `22+`
+- npm
+- An InsForge project
+
+### Installation
 
 ```bash
+git clone https://github.com/mandaldhruv/cue.git
+cd cue
 npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the project root.
+
+```env
+NEXT_PUBLIC_INSFORGE_URL=your_insforge_project_url
+NEXT_PUBLIC_INSFORGE_ANON_KEY=your_insforge_anon_key
+```
+
+> Never commit `.env.local`, API keys or `.insforge/project.json`.
+
+### Run Locally
+
+```bash
 npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+### Production Build
+
+```bash
 npm run build
+npm run start
 ```
 
-This starter does not use `wrangler.jsonc`.
+### Run Tests
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+npm test
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+---
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Content Publishing Workflow
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+Cue follows a simple publishing model:
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+- **Draft** content is visible only to the admin.
+- **Published** content becomes visible to students.
+- Empty sections never show fake material.
+- If a semester or subject is not ready, students see a clear coming-soon state.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+This allows the admin to prepare and review material before making it public.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+---
 
-## Useful Commands
+## Admin Access
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+The admin dashboard is available at:
 
-## Learn More
+```text
+/admin/login
+```
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Only authorised InsForge users can access the dashboard.
+
+The first-time setup option is intentionally not part of the public workflow. Admin access is controlled through authorised login credentials.
+
+---
+
+## InsForge Deployment
+
+This project is deployed with InsForge.
+
+```bash
+npx -y @insforge/cli deployments deploy .
+```
+
+Make sure the project is linked before deployment:
+
+```bash
+npx -y @insforge/cli link --project-id YOUR_PROJECT_ID
+```
+
+---
+
+## Important Notes
+
+- Student feedback is private and is never shown publicly.
+- Public testimonials are managed only through the admin dashboard.
+- Educator testimonials should be published only with permission.
+- PDFs, notes and resources should be reviewed before publishing.
+- Cue is currently focused on BMS students, with Semester 3 as the primary content-ready semester.
+
+---
+
+## Product Vision
+
+Cue is more than a material library.
+
+It is a calmer, cleaner and more focused way for BMS students to study—one place to find what matters, revise better and prepare with confidence.
+
+---
+
+## License
+
+This project is private and intended for Cue.
+
+---
+
+Built with care for BMS students.
