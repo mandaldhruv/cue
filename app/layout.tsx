@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+import "./enhancements.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:5173"),
   title: "Cue — Study smarter. Stress less.",
   description: "A calmer, smarter study platform for BMS students. Find notes, PYQs, flashcards and AI-powered exam insights in one beautiful space.",
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: [{ url: "/cue-favicon-original.png", type: "image/png", sizes: "64x64" }], shortcut: "/cue-favicon-original.png", apple: "/cue-favicon-original.png" },
   openGraph: {
     title: "Cue — Study smarter. Stress less.",
     description: "Notes, PYQs, flashcards and exam insights in one calm space.",
@@ -25,5 +22,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body></html>;
+  return <html lang="en"><body><div className="app-shell">{children}</div></body></html>;
 }

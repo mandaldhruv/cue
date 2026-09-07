@@ -1,0 +1,4 @@
+import Link from "next/link";
+import LegalPage from "../legal/LegalPage";
+
+export default function HelpPage() { return <LegalPage eyebrow="HELP & FAQS" title="A quick guide to Cue."><section><h2>How do I find material?</h2><p>Open <Link href="/subjects">Subjects</Link>, choose your semester, then choose a subject. Each subject workspace groups the syllabus, notes, PYQs, flashcards and useful resources together.</p></section><section><h2>Why can’t I see material for my semester?</h2><p>Some semesters or subjects may be marked Coming soon while content is being reviewed and organised.</p></section><section><h2>How do I report an issue?</h2><p>Use the <Link href="/feedback">Feedback page</Link> and tick the content-issue option. Include the subject and what looks incorrect so the team can review it.</p></section><section><h2>Can I suggest a resource?</h2><p>Yes. Share it through Feedback. Suggestions are reviewed before being added to Cue.</p></section></LegalPage>; }

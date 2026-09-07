@@ -1,91 +1,79 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-const templateRoot = new URL("../", import.meta.url);
-const previewRoot = new URL("../app/_sites-preview/", import.meta.url);
+const root = new URL("../", import.meta.url);
+const source = (path) => readFile(new URL(path, root), "utf8");
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
-}
-
-test("server-renders the starter loading skeleton", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(html, developmentPreviewMeta);
-  assert.match(html, /<title>Your site is taking shape<\/title>/i);
-  assert.match(html, /Building your site/);
-  assert.match(html, /Your site is taking shape/);
-  assert.match(
-    html,
-    /Your first version will appear here automatically when it’s ready\./,
-  );
-  assert.doesNotMatch(html, /Codex/);
-  assert.match(html, /react-loading-skeleton/);
-  assert.match(html, /role="status"/);
-});
-
-test("keeps the loading skeleton scoped and disposable", async () => {
-  const [preview, css, page, layout, packageJson, files] = await Promise.all([
-    readFile(new URL("SkeletonPreview.tsx", previewRoot), "utf8"),
-    readFile(new URL("preview.css", previewRoot), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readdir(previewRoot),
+test("ships Cue metadata and the intended public routes", async () => {
+  const [layout, home, subjects, flashcards, pyqs, feedback] = await Promise.all([
+    source("app/layout.tsx"),
+    source("app/page.tsx"),
+    source("app/subjects/page.tsx"),
+    source("app/flashcards/page.tsx"),
+    source("app/pyqs/page.tsx"),
+    source("app/feedback/page.tsx"),
   ]);
 
-  assert.deepEqual(files.sort(), ["SkeletonPreview.tsx", "preview.css"]);
-  assert.match(preview, /from "react-loading-skeleton"/);
-  assert.match(preview, /baseColor="#eceae7"/);
-  assert.match(preview, /highlightColor="#f9f8f6"/);
-  assert.match(preview, /duration=\{2\.8\}/);
-  assert.match(preview, /sites-skeleton-search-placeholder/);
-  assert.match(packageJson, /"react-loading-skeleton": "3\.5\.0"/);
+  assert.match(layout, /Cue — Study smarter\. Stress less\./);
+  assert.match(layout, /cue-favicon-original\.png/);
+  assert.match(home, /BMS STUDENTS/);
+  assert.doesNotMatch(home, />Explore subjects</i);
+  assert.doesNotMatch(home, /home-action-hub/);
+  assert.match(home, /hero-study-tabs/);
+  assert.match(home, /<b>Flashcards<\/b>/);
+  assert.ok(home.indexOf('className="how-cue-works"') > home.indexOf('className="focus-section"'));
+  assert.match(subjects, /SubjectsExplorer/);
+  assert.match(flashcards, /getPublishedContent\(undefined, "flashcard"\)/);
+  assert.match(pyqs, /PyqLibrary/);
+  assert.match(feedback, /FeedbackForm/);
+  assert.match(feedback, /TestimonialsSection/);
+});
 
-  const shellIndex = preview.indexOf('className="sites-skeleton-shell"');
-  const statusIndex = preview.indexOf('className="sites-skeleton-status"');
-  assert.ok(shellIndex >= 0 && statusIndex > shellIndex);
-  assert.match(css, /position:\s*fixed/);
-  assert.match(css, /inset:\s*0/);
-  assert.match(css, /opacity:\s*0\.52/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
-  assert.doesNotMatch(css, /#020617|canvas|pets|progress/i);
-  assert.doesNotMatch(
-    preview,
-    /loading-spinner|status-mark|status-progress|canvas|cookie|random/i,
-  );
+test("keeps admin access private and checks database membership", async () => {
+  const [loginPage, loginForm, actions, server, config] = await Promise.all([
+    source("app/admin/login/page.tsx"),
+    source("app/admin/login/AdminLoginForm.tsx"),
+    source("app/admin/actions.ts"),
+    source("app/lib/insforge/server.ts"),
+    source("insforge.toml"),
+  ]);
 
-  assert.match(page, /export const metadata:\s*Metadata/);
-  assert.match(page, /"codex-preview": "development"/);
-  assert.match(page, /<SkeletonPreview \/>/);
-  assert.match(layout, /title:\s*"Starter Project"/);
-  assert.doesNotMatch(layout, /codex-preview|_sites-preview|themeColor|\bViewport\b/);
-  assert.doesNotMatch(css, /(^|\s)(html|body)\s*\{/m);
+  assert.match(loginPage, /AdminLoginForm/);
+  assert.match(loginForm, /authorized Cue administrator account/);
+  assert.doesNotMatch(`${loginPage}\n${loginForm}`, /first[- ]time setup|sign up/i);
+  assert.match(actions, /signInWithPassword/);
+  assert.match(server, /rpc\("is_cue_admin"\)/);
+  assert.match(config, /disable_signup\s*=\s*true/);
+});
 
-  await assert.rejects(
-    access(new URL("public/_sites-preview", templateRoot)),
-  );
+test("protects admin writes and prevents duplicate PYQ submissions", async () => {
+  const [contentActions, pyqManager, migration] = await Promise.all([
+    source("app/admin/content-actions.ts"),
+    source("app/admin/pyqs/PyqManager.tsx"),
+    source("migrations/20260830170457_improve-admin-feedback-and-pyq-integrity.sql"),
+  ]);
+
+  assert.match(contentActions, /session\.user\s*\|\|\s*!session\.isAdmin/);
+  assert.match(pyqManager, /submittingRef\.current/);
+  assert.match(pyqManager, /submission_id/);
+  assert.match(migration, /content_items_pyq_submission_unique/);
+  assert.match(migration, /WHERE content_type = 'pyq'/);
+});
+
+test("keeps feedback private while publishing only approved testimonials", async () => {
+  const [feedbackAction, testimonialAction, imageRoute, migration] = await Promise.all([
+    source("app/feedback/actions.ts"),
+    source("app/admin/feedback/actions.ts"),
+    source("app/api/testimonial-image/[id]/route.ts"),
+    source("migrations/20260830170457_improve-admin-feedback-and-pyq-integrity.sql"),
+  ]);
+
+  assert.match(feedbackAction, /feedback_submissions/);
+  assert.match(testimonialAction, /consentConfirmed/);
+  assert.match(imageRoute, /eq\("is_published", true\)/);
+  assert.match(migration, /students can submit private feedback/);
+  assert.match(migration, /admins can read feedback/);
+  assert.match(migration, /published testimonials are publicly readable/);
+  assert.match(migration, /NOT is_published OR consent_confirmed/);
 });

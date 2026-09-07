@@ -1,0 +1,3 @@
+import LegalPage from "../legal/LegalPage";
+
+export default function DisclaimerPage() { return <LegalPage eyebrow="DISCLAIMER" title="Study support, not an official source."><section><h2>Educational use</h2><p>Cue is designed to help organise study material. It does not replace official university notices, faculty guidance, prescribed texts or your college syllabus.</p></section><section><h2>Check important information</h2><p>Always confirm exam dates, syllabus changes, marks, deadlines and academic rules with your college or university.</p></section><section><h2>External resources</h2><p>Resources may link to third-party websites. Cue does not control those websites or guarantee that their information remains current.</p></section></LegalPage>; }

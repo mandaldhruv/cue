@@ -1,216 +1,57 @@
-const subjects = [
-  { code: "ADV", title: "Advertising", meta: "5 units · 24 resources", tone: "coral", progress: 68 },
-  { code: "EDM", title: "Equity & Debt Markets", meta: "5 units · 19 resources", tone: "blue", progress: 42 },
-  { code: "BPEM", title: "Business Planning & Entrepreneurship", meta: "5 units · 21 resources", tone: "violet", progress: 31 },
-  { code: "AMD", title: "Accounting for Managerial Decisions", meta: "5 units · 26 resources", tone: "mint", progress: 54 },
-  { code: "ECO II", title: "Principles of Economics II", meta: "5 units · 18 resources", tone: "amber", progress: 22 },
-  { code: "HIN I", title: "Hindi I", meta: "4 units · 16 resources", tone: "pink", progress: 76 },
-];
+import Link from "next/link";
+import { Footer, Navigation, SubjectCard } from "./components";
+import CountUpStats from "./CountUpStats";
+import { createInsForgeServerClient } from "./lib/insforge/server";
+import type { Subject } from "./data";
 
-const features = [
-  { number: "01", title: "Everything, finally together.", copy: "Syllabus, notes, PYQs and resources—beautifully organised by subject, unit and year.", accent: "blue" },
-  { number: "02", title: "Know what matters most.", copy: "Exam Insights turns past papers into chapter trends, repeated questions and a clear prep priority.", accent: "violet" },
-  { number: "03", title: "Progress you can feel.", copy: "Tick off chapters, solve PYQs and continue exactly where you stopped—on any device.", accent: "coral" },
-];
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  return (
+const accents: Record<string, Subject["accent"]> = { "#E8665B": "coral", "#315DE6": "blue", "#7459E9": "violet", "#299B7D": "mint", "#D58B2A": "amber", "#CF538F": "rose" };
+
+export default async function Home() {
+  const client = await createInsForgeServerClient();
+  const [{ data: subjectRows }, { data: contentRows }, { data: semesterRows }] = await Promise.all([
+    client.database.from("subjects").select("name,slug,short_code,description,accent_color").eq("course_code", "BMS").eq("is_published", true).order("semester_number", { ascending: true }).order("sort_order", { ascending: true }),
+    client.database.from("content_items").select("id,subject_id,content_type,title,description,body,is_published").eq("is_published", true),
+    client.database.from("semesters").select("id,status").eq("course_code", "BMS").eq("status", "published"),
+  ]);
+  const subjects: Subject[] = (subjectRows ?? []).map((item: { name: string; slug: string; short_code: string; description: string; accent_color: string }) => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accents[item.accent_color.toUpperCase()] ?? "blue", units: [], notes: 0, papers: 0 }));
+  const topics = (contentRows ?? []).filter((item: { content_type: string }) => item.content_type === "important_topic").slice(0, 4) as { id: string; title: string; description: string; body: string }[];
+  return <>
+    <Navigation />
     <main>
-      <section className="hero" id="home">
-        <nav className="nav shell" aria-label="Main navigation">
-          <a className="brand" href="#home" aria-label="Cue home">
-            <span className="brand-mark"><i /></span>
-            <span>Cue</span>
-          </a>
-          <div className="nav-links">
-            <a className="active" href="#home">Home</a>
-            <a href="#subjects">Subjects</a>
-            <a href="#insights">Exam insights</a>
-            <a href="#features">Why Cue?</a>
-          </div>
-          <a className="nav-cta" href="#subjects">Start studying <span>↗</span></a>
-          <details className="mobile-menu">
-            <summary aria-label="Open navigation"><span /><span /></summary>
-            <div>
-              <a href="#subjects">Subjects</a>
-              <a href="#insights">Exam insights</a>
-              <a href="#features">Why Cue?</a>
-              <a href="#subjects">Start studying</a>
-            </div>
-          </details>
-        </nav>
-
-        <div className="hero-glow hero-glow-one" />
-        <div className="hero-glow hero-glow-two" />
-        <div className="hero-content shell">
+      <section className="new-hero">
+        <div className="hero-wash" />
+        <div className="container hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow"><span>✦</span> Made for BMS students</div>
-            <h1>Study smarter.<br /><em>Stress less.</em></h1>
-            <p>One calm, beautifully organised space for every note, PYQ, flashcard and exam insight you need.</p>
-            <div className="hero-actions">
-              <a className="button button-light" href="#subjects">Explore subjects <span>→</span></a>
-              <a className="text-link" href="#insights"><span className="play">▶</span> See how it works</a>
+            <span className="bms-hero-badge"><i>✦</i><span><small>BUILT EXCLUSIVELY FOR</small><b>BMS STUDENTS</b></span></span>
+            <h1>Your complete<br /><em>BMS study space.</em></h1>
+            <p>Semester-wise notes, PYQs, flashcards and exam insights—created around what BMS students actually need.</p>
+            <CountUpStats subjects={subjects.length} resources={contentRows?.length ?? 0} semesters={semesterRows?.length ?? 0}/>
+          </div>
+          <div className="hero-study-panel">
+            <div className="hero-panel-head"><span>START STUDYING</span><small>BMS · SEMESTER 3</small></div>
+            <div className="hero-study-tabs">
+              <Link href="/subjects"><i>01</i><div><b>Choose a subject</b><small>Open syllabus, notes and important topics</small></div><span>→</span></Link>
+              <Link href="/pyqs"><i>02</i><div><b>Practice PYQs</b><small>Browse real papers by subject and year</small></div><span>→</span></Link>
+              <Link href="/flashcards"><i>03</i><div><b>Flashcards</b><small>Revise key concepts with active recall</small></div><span>→</span></Link>
             </div>
-            <div className="trust-row">
-              <div className="avatar-stack"><b>HS</b><b>AM</b><b>RK</b><b>+</b></div>
-              <div><strong>Built with students</strong><span>For calmer exam seasons</span></div>
-            </div>
-          </div>
-
-          <div className="hero-art" aria-label="A visual preview of Cue study tools">
-            <div className="art-halo" />
-            <img src="/cue-hero.png" alt="Floating glass study dashboard with flashcards and exam notes" />
-            <div className="float-card progress-float">
-              <span className="mini-icon">✓</span>
-              <div><small>Today&apos;s progress</small><strong>4 tasks complete</strong></div>
-            </div>
-            <div className="float-card insight-float">
-              <span className="spark">✦</span>
-              <div><small>Exam insight</small><strong>Unit 3 is high priority</strong></div>
-            </div>
-          </div>
-        </div>
-        <div className="hero-bottom shell">
-          <span>Scroll to discover</span><i />
-          <div><b>06</b><span>Subjects</span><b>100%</b><span>Focused</span><b>01</b><span>Calm space</span></div>
-        </div>
-      </section>
-
-      <section className="search-strip">
-        <div className="shell search-wrap">
-          <span className="search-icon">⌕</span>
-          <div><small>WHAT ARE YOU STUDYING?</small><strong>Search subjects, notes, topics or PYQs...</strong></div>
-          <kbd>⌘ K</kbd>
-        </div>
-      </section>
-
-      <section className="section subjects-section" id="subjects">
-        <div className="shell">
-          <div className="section-head">
-            <div><span className="kicker">YOUR SEMESTER, SORTED</span><h2>Six subjects.<br /><em>Zero chaos.</em></h2></div>
-            <p>Everything for BMS Semester 3, structured so you spend less time searching and more time actually learning.</p>
-          </div>
-          <div className="subject-grid">
-            {subjects.map((subject, index) => (
-              <a className={`subject-card ${subject.tone}`} href="#" key={subject.code}>
-                <div className="subject-top"><span>{subject.code}</span><b>0{index + 1}</b></div>
-                <div className="subject-orbit"><i /><span>{subject.code.slice(0, 2)}</span></div>
-                <h3>{subject.title}</h3>
-                <p>{subject.meta}</p>
-                <div className="subject-progress"><span style={{ width: `${subject.progress}%` }} /></div>
-                <div className="subject-foot"><small>{subject.progress}% explored</small><span>→</span></div>
-              </a>
-            ))}
-          </div>
-          <div className="center-action"><a className="button button-dark" href="#">View all study material <span>→</span></a></div>
-        </div>
-      </section>
-
-      <section className="section features-section" id="features">
-        <div className="shell">
-          <div className="feature-intro">
-            <span className="kicker light">WHY CUE FEELS DIFFERENT</span>
-            <h2>Less hunting.<br />More <em>aha.</em></h2>
-            <p>Designed around the way students actually prepare—not around folders, filenames or fifty open tabs.</p>
-          </div>
-          <div className="feature-list">
-            {features.map((feature) => (
-              <article className={`feature-row ${feature.accent}`} key={feature.number}>
-                <span>{feature.number}</span><h3>{feature.title}</h3><p>{feature.copy}</p><b>↗</b>
-              </article>
-            ))}
+            <div className="hero-panel-foot"><span><i/> Semester 3 available</span><Link href="/subjects">View all material ↗</Link></div>
           </div>
         </div>
       </section>
 
-      <section className="section insights-section" id="insights">
-        <div className="shell insights-grid">
-          <div className="insights-copy">
-            <span className="kicker">AI-POWERED EXAM INSIGHTS</span>
-            <h2>Past papers,<br /><em>decoded.</em></h2>
-            <p>Cue reads years of PYQs and turns the noise into a clear, evidence-backed plan for your next exam.</p>
-            <ul>
-              <li><span>✓</span> Repeated topics and definitions</li>
-              <li><span>✓</span> Chapter-wise marks distribution</li>
-              <li><span>✓</span> Short vs long answer trends</li>
-            </ul>
-            <a className="button button-dark" href="#">Explore Exam Insights <span>↗</span></a>
-            <small className="disclaimer">AI predictions are based on available papers and are not guarantees.</small>
-          </div>
-          <div className="insights-dashboard">
-            <div className="dash-head"><div><span className="spark-box">✦</span><div><strong>Exam Insights</strong><small>Advertising · Semester 3</small></div></div><button>Last 5 years⌄</button></div>
-            <div className="dash-stat-row">
-              <div><small>PAPERS ANALYSED</small><strong>12</strong><span>↑ 2 new</span></div>
-              <div><small>TOPIC CONFIDENCE</small><strong>92%</strong><span>High signal</span></div>
-              <div><small>TIME TO REVISE</small><strong>4.5h</strong><span>Est. focus time</span></div>
-            </div>
-            <div className="dash-main">
-              <div className="chart-card">
-                <div className="card-label"><strong>Chapter frequency</strong><small>Appearances in PYQs</small></div>
-                <div className="bars">
-                  {[88, 66, 54, 41, 29].map((height, i) => <div key={i}><span style={{ height: `${height}%` }} /><small>U{i + 1}</small></div>)}
-                </div>
-              </div>
-              <div className="priority-card">
-                <div className="card-label"><strong>Prep priority</strong><small>Based on trends</small></div>
-                <div className="priority-item high"><b>01</b><div><strong>Media planning</strong><small>8 appearances · 10 marks</small></div><span>HIGH</span></div>
-                <div className="priority-item medium"><b>02</b><div><strong>Agency structure</strong><small>6 appearances · 5 marks</small></div><span>MED</span></div>
-                <div className="priority-item low"><b>03</b><div><strong>Ad regulations</strong><small>3 appearances · short note</small></div><span>LOW</span></div>
-              </div>
-            </div>
-          </div>
+      <section className="home-section subjects-home">
+        <div className="container"><div className="focused-subject-head"><span>{String(subjects.length).padStart(2, "0")}</span><h2>{subjects.length} focused subjects</h2></div>
+          <div className="subject-grid">{subjects.map((subject, i) => <SubjectCard subject={subject} index={i} key={subject.slug} />)}</div>
         </div>
       </section>
 
-      <section className="section progress-section">
-        <div className="shell progress-grid">
-          <div className="phone-wrap">
-            <div className="phone">
-              <div className="phone-top"><span>9:41</span><i /><i /></div>
-              <div className="phone-brand"><span className="brand-mark small"><i /></span><strong>Good evening, Harshita</strong><b>HS</b></div>
-              <p>Your semester progress</p>
-              <div className="big-progress"><div><strong>54%</strong><span>complete</span></div><i style={{ "--p": "54%" } as React.CSSProperties} /></div>
-              <div className="continue-card"><small>CONTINUE WHERE YOU LEFT</small><strong>Equity & Debt Markets</strong><span>Unit 3 · Debt instruments</span><button>Continue learning →</button></div>
-              <div className="week"><strong>This week</strong><div>{["M", "T", "W", "T", "F"].map((d, i) => <span className={i < 4 ? "done" : ""} key={i}>{i < 4 ? "✓" : d}</span>)}</div></div>
-            </div>
-          </div>
-          <div className="progress-copy">
-            <span className="kicker">YOUR PROGRESS, YOUR PACE</span>
-            <h2>Pick up right<br />where you <em>paused.</em></h2>
-            <p>Cue remembers what you completed, what you bookmarked and what deserves your attention next.</p>
-            <div className="metric-row"><div><strong>54%</strong><span>Semester complete</span></div><div><strong>12</strong><span>Day study streak</span></div><div><strong>28</strong><span>Topics mastered</span></div></div>
-            <a className="text-arrow" href="#">See your study dashboard <span>→</span></a>
-          </div>
-        </div>
-      </section>
+      <section className="home-section flashcards-spotlight"><div className="container"><div className="flashcards-spotlight-copy"><span className="eyebrow">CORE CUE FEATURE</span><h2>Study the notes.<br/><em>Recall the ideas.</em></h2><p>Cue flashcards are built around the same study material you find here—so revision stays connected to what you are learning.</p><Link className="primary-button" href="/flashcards">Open Flashcards <span>→</span></Link></div><div className="flashcards-spotlight-card" aria-label="Flashcards in Cue"><span>ACTIVE RECALL</span><div><i>01</i><b>Study notes</b><small>Understand the topic</small></div><strong>↓</strong><div><i>02</i><b>Cue flashcards</b><small>Revisit key concepts</small></div></div></div></section>
 
-      <section className="quote-section">
-        <div className="shell quote-inner">
-          <span className="quote-mark">“</span>
-          <blockquote>I stopped wasting half my study time just looking for the right PDF. Cue makes exam prep feel <em>possible</em> again.</blockquote>
-          <div className="student"><b>AS</b><div><strong>Aarav Shah</strong><span>BMS · Semester 3</span></div></div>
-        </div>
-      </section>
+      {topics.length > 0 && <section className="home-section focus-section"><div className="container focus-grid"><div className="focus-copy"><span className="eyebrow">PUBLISHED EXAM FOCUS</span><h2>Know what deserves<br/><em>your attention.</em></h2><p>These topics come directly from the material reviewed and published by the Cue team—no invented scores or placeholder predictions.</p><Link className="primary-button" href="/subjects">Open your subject <span>→</span></Link></div><div className="focus-board real-focus-board"><div className="focus-header"><div><span>✦</span><b>Important topics</b></div><small>Live from Cue</small></div>{topics.map((item, index) => <article key={item.id}><b>{String(index + 1).padStart(2, "0")}</b><div><span>{item.title}</span>{(item.description || item.body) && <small>{item.description || item.body}</small>}</div></article>)}</div></div></section>}
 
-      <section className="cta-section">
-        <div className="cta-glow" />
-        <div className="shell cta-inner">
-          <span className="kicker light">YOUR CALMER SEMESTER STARTS HERE</span>
-          <h2>Ready to study<br /><em>with a cue?</em></h2>
-          <p>Open a subject. Find what matters. Make real progress.</p>
-          <a className="button button-light" href="#subjects">Start studying now <span>→</span></a>
-        </div>
-      </section>
-
-      <footer>
-        <div className="shell footer-grid">
-          <div className="footer-brand"><a className="brand" href="#home"><span className="brand-mark"><i /></span><span>Cue</span></a><p>Your calm corner for smarter study and less stressful exam prep.</p><small>Created with care by Harshita Singh.</small></div>
-          <div><strong>Explore</strong><a href="#subjects">Subjects</a><a href="#">Flashcards</a><a href="#">PYQs</a><a href="#insights">Exam Insights</a></div>
-          <div><strong>Cue</strong><a href="#features">Why Cue?</a><a href="#">About</a><a href="#">Feedback</a><a href="#">Contact</a></div>
-          <div className="footer-note"><strong>Found something wrong?</strong><p>Tell us and help make Cue better for everyone.</p><a href="#">Share feedback ↗</a></div>
-        </div>
-        <div className="shell footer-bottom"><span>© 2026 Cue. Study smarter, stress less.</span><div><a href="#">Privacy</a><a href="#">Terms</a><a href="#home">Back to top ↑</a></div></div>
-      </footer>
     </main>
-  );
+    <Footer />
+  </>;
 }
