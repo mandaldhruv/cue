@@ -22,12 +22,27 @@ test("ships Cue metadata and the intended public routes", async () => {
   assert.doesNotMatch(home, /home-action-hub/);
   assert.match(home, /hero-study-tabs/);
   assert.match(home, /<b>Flashcards<\/b>/);
-  assert.ok(home.indexOf('className="how-cue-works"') > home.indexOf('className="focus-section"'));
+  assert.doesNotMatch(home, /className="how-cue-works"/);
   assert.match(subjects, /SubjectsExplorer/);
   assert.match(flashcards, /getPublishedContent\(undefined, "flashcard"\)/);
   assert.match(pyqs, /PyqLibrary/);
   assert.match(feedback, /FeedbackForm/);
   assert.match(feedback, /TestimonialsSection/);
+});
+
+test("ships structured, admin-owned flashcards without seeded examples", async () => {
+  const [manager, deck, migration] = await Promise.all([
+    source("app/admin/flashcards/FlashcardManager.tsx"),
+    source("app/flashcards/FlashcardDeck.tsx"),
+    source("migrations/20260908174946_build-flashcard-learning-system.sql"),
+  ]);
+
+  assert.match(manager, /saveFlashcardUnit/);
+  assert.match(manager, /RichContentEditor/);
+  assert.match(deck, /View solution/);
+  assert.match(migration, /CREATE TABLE public\.flashcard_units/);
+  assert.match(migration, /CREATE TABLE public\.flashcard_topics/);
+  assert.doesNotMatch(migration, /INSERT INTO public\.(flashcard_units|flashcard_topics|content_items)/);
 });
 
 test("keeps admin access private and checks database membership", async () => {

@@ -3,10 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { getAdminSession } from "../lib/insforge/server";
 import type { AdminActionResult, EditableContentType, SemesterStatus } from "./types";
+import { isRichDocument, richDocumentText, type RichDocument } from "../flashcards/rich-content";
 
 function textValue(formData: FormData, key: string) { return String(formData.get(key) ?? "").trim(); }
 function numberValue(formData: FormData, key: string) { return Number(formData.get(key) ?? 0); }
 function fail(message: string): AdminActionResult { return { ok: false, message }; }
+
+function richValue(formData: FormData, key: string): RichDocument | null {
+  try {
+    const raw = textValue(formData, key);
+    if (!raw || raw.length > 150000) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isRichDocument(parsed) && parsed.blocks.every((block) => block.type !== "image" || (!!block.url && !!block.key)) ? parsed : null;
+  } catch { return null; }
+}
 
 async function context() {
   const session = await getAdminSession();
@@ -194,6 +204,18 @@ export async function saveContentItem(formData: FormData): Promise<AdminActionRe
 export async function setContentPublished(id: string, isPublished: boolean): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  if (isPublished) {
+    const { data: card } = await session.client.database.from("content_items").select("content_type,flashcard_unit_id,flashcard_topic_id").eq("id", id).limit(1);
+    const item = card?.[0];
+    if (item?.content_type === "flashcard") {
+      if (!item.flashcard_unit_id || !item.flashcard_topic_id) return fail("Assign a unit and topic before publishing this flashcard.");
+      const [{ data: unit }, { data: topic }] = await Promise.all([
+        session.client.database.from("flashcard_units").select("id").eq("id", item.flashcard_unit_id).eq("is_published", true).limit(1),
+        session.client.database.from("flashcard_topics").select("id").eq("id", item.flashcard_topic_id).eq("is_published", true).limit(1),
+      ]);
+      if (!unit?.length || !topic?.length) return fail("Publish the selected unit and topic before publishing this card.");
+    }
+  }
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id);
   if (error) return fail(error.message ?? "Could not change content visibility.");
   await logAction(session.client, "visibility", "content_item", id, isPublished ? "Published" : "Moved to draft");
@@ -232,6 +254,135 @@ export async function deleteContentItem(id: string): Promise<AdminActionResult> 
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
   return { ok: true, message: "Content item deleted." };
+}
+
+export async function saveFlashcardUnit(formData: FormData): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const id = textValue(formData, "id");
+  const subjectId = textValue(formData, "subject_id");
+  const title = textValue(formData, "title");
+  if (!subjectId || !title) return fail("Choose a subject and add a unit name.");
+  const payload = { subject_id: subjectId, title, sort_order: Math.max(0, numberValue(formData, "sort_order")), is_published: formData.get("is_published") !== "false" };
+  const query = id ? session.client.database.from("flashcard_units").update(payload).eq("id", id).select("id") : session.client.database.from("flashcard_units").insert([payload]).select("id");
+  const { data, error } = await query;
+  if (error) return fail(error.message?.toLowerCase().includes("unique") ? "A unit with this name already exists for the subject." : error.message ?? "Could not save the unit.");
+  await logAction(session.client, id ? "update" : "create", "flashcard_unit", id || data?.[0]?.id || null, title);
+  refreshContent(); revalidatePath("/admin/flashcards");
+  return { ok: true, message: id ? "Unit updated." : "Unit created." };
+}
+
+export async function deleteFlashcardUnit(id: string): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_unit_id", id).limit(1);
+  if (cards?.length) return fail("Move or delete this unit’s flashcards first.");
+  const { data: topics } = await session.client.database.from("flashcard_topics").select("id").eq("unit_id", id).limit(1);
+  if (topics?.length) return fail("Move or delete this unit’s topics first.");
+  const { error } = await session.client.database.from("flashcard_units").delete().eq("id", id);
+  if (error) return fail(error.message ?? "Could not delete the unit.");
+  await logAction(session.client, "delete", "flashcard_unit", id, "Deleted empty flashcard unit");
+  refreshContent(); revalidatePath("/admin/flashcards");
+  return { ok: true, message: "Unit deleted." };
+}
+
+export async function saveFlashcardTopic(formData: FormData): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const id = textValue(formData, "id");
+  const subjectId = textValue(formData, "subject_id");
+  const unitId = textValue(formData, "unit_id");
+  const title = textValue(formData, "title");
+  if (!subjectId || !unitId || !title) return fail("Choose a unit and add a topic name.");
+  const payload = { subject_id: subjectId, unit_id: unitId, title, sort_order: Math.max(0, numberValue(formData, "sort_order")), is_published: formData.get("is_published") !== "false" };
+  const query = id ? session.client.database.from("flashcard_topics").update(payload).eq("id", id).select("id") : session.client.database.from("flashcard_topics").insert([payload]).select("id");
+  const { data, error } = await query;
+  if (error) return fail(error.message?.toLowerCase().includes("unique") ? "That topic already exists in this unit. Select the existing topic instead." : error.message ?? "Could not save the topic.");
+  await logAction(session.client, id ? "update" : "create", "flashcard_topic", id || data?.[0]?.id || null, title);
+  refreshContent(); revalidatePath("/admin/flashcards");
+  return { ok: true, message: id ? "Topic updated." : "Topic created." };
+}
+
+export async function deleteFlashcardTopic(id: string): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_topic_id", id).limit(1);
+  if (cards?.length) return fail("Move or delete this topic’s flashcards first.");
+  const { error } = await session.client.database.from("flashcard_topics").delete().eq("id", id);
+  if (error) return fail(error.message ?? "Could not delete the topic.");
+  await logAction(session.client, "delete", "flashcard_topic", id, "Deleted empty flashcard topic");
+  refreshContent(); revalidatePath("/admin/flashcards");
+  return { ok: true, message: "Topic deleted." };
+}
+
+export async function moveFlashcardTopic(id: string, unitId: string, direction: "up" | "down"): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const { data, error } = await session.client.database.from("flashcard_topics").select("id,sort_order").eq("unit_id", unitId).order("sort_order", { ascending: true });
+  if (error || !data) return fail(error?.message ?? "Could not load topic order.");
+  const index = data.findIndex((item: { id: string }) => item.id === id);
+  const other = data[index + (direction === "up" ? -1 : 1)];
+  if (index < 0 || !other) return { ok: true, message: "Topic is already at the edge." };
+  const current = data[index];
+  const first = await session.client.database.from("flashcard_topics").update({ sort_order: other.sort_order }).eq("id", current.id).eq("unit_id", unitId);
+  const second = await session.client.database.from("flashcard_topics").update({ sort_order: current.sort_order }).eq("id", other.id).eq("unit_id", unitId);
+  if (first.error || second.error) return fail(first.error?.message ?? second.error?.message ?? "Could not reorder topics.");
+  await logAction(session.client, "reorder", "flashcard_topic", id, `Moved ${direction} within unit`);
+  refreshContent();
+  revalidatePath("/admin/flashcards");
+  revalidatePath("/flashcards");
+  return { ok: true, message: "Topic order updated." };
+}
+
+export async function saveFlashcard(formData: FormData): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired. Please sign in again.");
+  const id = textValue(formData, "id");
+  const subjectId = textValue(formData, "subject_id");
+  const unitId = textValue(formData, "flashcard_unit_id");
+  const topicId = textValue(formData, "flashcard_topic_id");
+  const question = richValue(formData, "question_document");
+  const answer = richValue(formData, "answer_document");
+  const questionText = question ? richDocumentText(question) : "";
+  const answerText = answer ? richDocumentText(answer) : "";
+  if (!subjectId || !unitId || !topicId) return fail("Semester, subject, unit and topic are required.");
+  if (!question || !questionText) return fail("Add at least one question block.");
+  if (!answer || !answerText) return fail("Add at least one answer block.");
+  const { data: topic, error: topicError } = await session.client.database.from("flashcard_topics").select("id,is_published").eq("id", topicId).eq("unit_id", unitId).eq("subject_id", subjectId).limit(1);
+  if (topicError || !topic?.length) return fail("The selected topic does not belong to this unit and subject.");
+  if (formData.get("is_published") === "true") {
+    const { data: unit } = await session.client.database.from("flashcard_units").select("id,is_published").eq("id", unitId).eq("subject_id", subjectId).limit(1);
+    if (!unit?.[0]?.is_published || !topic[0].is_published) return fail("Publish the selected unit and topic before publishing this card.");
+  }
+  const payload = {
+    subject_id: subjectId, content_type: "flashcard", flashcard_unit_id: unitId, flashcard_topic_id: topicId,
+    title: questionText.slice(0, 240), description: textValue(formData, "description"), body: answerText,
+    question_document: question, answer_document: answer, file_url: null, file_key: null,
+    sort_order: Math.max(0, numberValue(formData, "sort_order")), is_published: formData.get("is_published") === "true",
+  };
+  const query = id ? session.client.database.from("content_items").update(payload).eq("id", id).eq("content_type", "flashcard").select("id") : session.client.database.from("content_items").insert([payload]).select("id");
+  const { data, error } = await query;
+  if (error) return fail(error.message ?? "Could not save this flashcard.");
+  await logAction(session.client, id ? "update" : "create", "flashcard", id || data?.[0]?.id || null, questionText.slice(0, 120));
+  refreshContent(); revalidatePath("/admin/flashcards"); revalidatePath("/flashcards");
+  return { ok: true, message: id ? "Flashcard updated." : "Flashcard created." };
+}
+
+export async function moveFlashcard(id: string, topicId: string, direction: "up" | "down"): Promise<AdminActionResult> {
+  const session = await context();
+  if (!session) return fail("Your admin session has expired.");
+  const { data, error } = await session.client.database.from("content_items").select("id,sort_order").eq("content_type", "flashcard").eq("flashcard_topic_id", topicId).order("sort_order", { ascending: true });
+  if (error || !data) return fail(error?.message ?? "Could not load flashcard order.");
+  const index = data.findIndex((item: { id: string }) => item.id === id);
+  const other = data[index + (direction === "up" ? -1 : 1)];
+  if (index < 0 || !other) return { ok: true, message: "Flashcard is already at the edge." };
+  const current = data[index];
+  const first = await session.client.database.from("content_items").update({ sort_order: other.sort_order }).eq("id", current.id);
+  const second = await session.client.database.from("content_items").update({ sort_order: current.sort_order }).eq("id", other.id);
+  if (first.error || second.error) return fail(first.error?.message ?? second.error?.message ?? "Could not reorder flashcards.");
+  await logAction(session.client, "reorder", "flashcard", id, `Moved ${direction} within topic`);
+  refreshContent(); revalidatePath("/admin/flashcards");
+  return { ok: true, message: "Flashcard order updated." };
 }
 
 export async function savePyq(formData: FormData): Promise<AdminActionResult> {

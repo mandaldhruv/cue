@@ -1,0 +1,10 @@
+.agents/
+.openai/
+db/
+drizzle/
+examples/
+migrations/
+tests/
+PRD.md
+README.md
+skills-lock.json

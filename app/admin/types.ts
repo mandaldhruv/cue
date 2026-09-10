@@ -40,6 +40,27 @@ export type ContentRecord = {
   file_key: string | null;
   sort_order: number;
   is_published: boolean;
+  flashcard_unit_id?: string | null;
+  flashcard_topic_id?: string | null;
+  question_document?: import("../flashcards/rich-content").RichDocument | null;
+  answer_document?: import("../flashcards/rich-content").RichDocument | null;
+};
+
+export type FlashcardUnitRecord = {
+  id: string;
+  subject_id: string;
+  title: string;
+  sort_order: number;
+  is_published: boolean;
+};
+
+export type FlashcardTopicRecord = {
+  id: string;
+  subject_id: string;
+  unit_id: string;
+  title: string;
+  sort_order: number;
+  is_published: boolean;
 };
 
 export type PyqRecord = {

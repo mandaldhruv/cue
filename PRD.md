@@ -98,17 +98,16 @@ The PYQ area helps students find actual exam papers by subject and year. A stude
 
 ### Flashcards
 
-Flashcards support quick active recall. Each card has a question or prompt on one side and an answer on the other. Decks are connected to their relevant subject.
+Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**. Each card has a question or prompt followed by a detailed answer. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
 
 ### Feedback page
 
 The Feedback page is intentionally compact and student-friendly:
 
-1. A short educator testimonial appears first, where available.
-2. Students then see the message: **“Help us make studying feel lighter.”**
-3. The feedback form asks for:
+1. Admin-approved educator testimonials appear first, where available.
+2. The feedback form asks for:
    - a 1–5 star rating;
-   - study year and optional email; and
+   - an optional email address; and
    - a written suggestion, issue or idea.
 
 Submissions are private. They are stored for the admin to review and are not displayed publicly as student comments.
@@ -125,7 +124,7 @@ The dashboard is divided into practical sections:
 | **Semesters** | Create and manage semesters, set their order and control whether they are published, draft or coming soon. |
 | **Subjects** | Add, edit, reorder, publish or unpublish subjects within a semester. |
 | **Study Content** | Choose a semester and subject, then manage syllabus units, notes, exam-focus topics and recommended resources. |
-| **Flashcards** | Create question-and-answer cards, edit them, set their order and choose whether they are live or draft. |
+| **Flashcards** | Organise decks by unit and topic; create rich question-and-answer cards; reorder topics/cards; and control whether each item is live or draft. |
 | **PYQs & PDFs** | Upload PDF papers, attach a title, year, exam type and description, then publish, replace or remove them. |
 | **Feedback & Testimonials** | Review student feedback, set its review status, add private notes and manage public educator testimonials. |
 
@@ -169,7 +168,7 @@ Only published testimonials appear on the public website.
 
 1. Open **Feedback**.
 2. Choose a rating.
-3. Select study year and optionally add an email address.
+3. Optionally add an email address for follow-up.
 4. Write the feedback or suggestion.
 5. Submit it privately.
 

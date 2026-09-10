@@ -49,7 +49,7 @@ Cue includes a private admin workspace for managing all study material without e
 | Semesters | Create, reorder and publish semesters |
 | Subjects | Add, edit, publish and reorder subjects |
 | Study Content | Manage syllabus, notes, important topics and resources |
-| Flashcards | Build, edit, reorder and publish flashcard decks |
+| Flashcards | Organise units/topics, create rich cards, reorder topics/cards and control publishing |
 | PYQs & PDFs | Upload, replace, publish and manage question-paper PDFs |
 | Feedback | Review private student feedback and update review status |
 | Testimonials | Add approved educator testimonials with optional headshots |
@@ -58,13 +58,16 @@ Cue includes a private admin workspace for managing all study material without e
 
 ## Flashcards: A Core Cue Feature
 
-Cue flashcards are designed around the same study material available inside Cue.
+Cue flashcards are designed around the same study material available inside Cue. Decks follow a clear **Subject → Unit → Topic → Card** hierarchy, and questions or answers can contain structured text, lists, tables and images.
 
 This makes revision more focused:
 
 1. Study the notes and resources.
 2. Open the related flashcards.
 3. Recall important concepts through active revision.
+4. Continue naturally from the last card in one topic to the first card in the next.
+
+In the admin workspace, topics appear as a compact accordion. Admins can expand one topic at a time, reorder topics, and independently edit, reorder, publish or unpublish every card.
 
 The goal is not just to store content, but to help students revise it properly.
 
@@ -100,6 +103,8 @@ app/
 
 migrations/                # Database schema and access-control migrations
 public/                    # Logo, favicon and visual assets
+scripts/                   # Maintainer-only content import utilities
+tests/                     # Build and security regression checks
 PRD.md                     # Product requirements document
 ```
 
@@ -128,6 +133,7 @@ Create a `.env.local` file in the project root.
 ```env
 NEXT_PUBLIC_INSFORGE_URL=your_insforge_project_url
 NEXT_PUBLIC_INSFORGE_ANON_KEY=your_insforge_anon_key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 > Never commit `.env.local`, API keys or `.insforge/project.json`.
@@ -154,6 +160,7 @@ npm run start
 ### Run Tests
 
 ```bash
+npm run lint
 npm test
 ```
 
