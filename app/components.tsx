@@ -41,7 +41,7 @@ export function Footer() {
         <div className="footer-brand"><Logo /><p>Study <b>smarter.</b> Stress less.</p><small>One organised study space for BMS students.</small></div>
         <nav className="footer-links" aria-label="Explore Cue"><b>Explore</b><Link href="/">Home</Link><Link href="/subjects">Subjects</Link><Link href="/flashcards">Flashcards</Link><Link href="/pyqs">PYQs</Link><Link href="/about">About</Link></nav>
         <nav className="footer-links" aria-label="Support"><b>Support</b><Link href="/feedback">Feedback</Link><Link href="/help">Help &amp; FAQs</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Use</Link><Link href="/disclaimer">Disclaimer</Link></nav>
-        <div className="footer-bottom footer-bottom-minimal"><strong>© Cue 2026</strong><span className="footer-credit">Built with <i>♥</i> by Harshita</span></div>
+        <div className="footer-bottom footer-bottom-minimal"><span className="footer-credit-line"><strong>© Cue 2026</strong><span className="footer-credit">Built with <i>♥</i> by Harshita</span></span></div>
       </div>
     </footer>
   );
