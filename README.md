@@ -34,6 +34,10 @@ Cue helps students find the right material quickly by organising it semester-wis
 - Published syllabus, notes, important topics and resources
 - Previous-year paper library with PDF preview and download
 - Subject-based flashcard decks for active recall
+- Student accounts with Google and email/password sign-in
+- Email verification for newly created student accounts
+- Login required only for protected outputs: PDF downloads and flashcard solutions
+- Persistent student sessions, with the signed-in learner shown in the navigation
 - Clear empty and coming-soon states when content is not available
 - Private feedback form for student suggestions and issue reporting
 - Educator testimonials managed by the admin
@@ -73,6 +77,21 @@ The goal is not just to store content, but to help students revise it properly.
 
 ---
 
+## Student Accounts and Protected Actions
+
+Students can browse Cue freely: subjects, published study material, PYQ listings, PDF previews and flashcard questions remain available without an account.
+
+Cue asks a student to sign in only when they request a protected output:
+
+- downloading a PYQ PDF; or
+- revealing a flashcard solution.
+
+The protected-action flow opens a compact Cue login modal over the current page. Students can continue with Google, sign in with an existing email/password account, or create an account and verify their email using a one-time code. The normal navigation **Sign in** control opens the complete `/login` page.
+
+After a successful Google, email/password or email-verification flow, the student returns to the original page with a persistent server-verified session. Their name or email-based initial appears in the navigation, where they can also sign out.
+
+---
+
 ## Tech Stack
 
 - **Framework:** Next.js
@@ -92,8 +111,11 @@ The goal is not just to store content, but to help students revise it properly.
 app/
 ├── admin/                 # Private admin dashboard
 ├── about/                 # About Cue page
+├── api/auth/              # OAuth callback, refresh and current-session routes
+├── auth/                  # Client auth context, session state and protected-action modal
 ├── feedback/              # Feedback form and testimonials
 ├── flashcards/            # Flashcard library and card player
+├── login/                 # Student sign-in, account creation and email verification
 ├── pyqs/                  # Previous-year paper library
 ├── subjects/              # Semester, subject and study workspace pages
 ├── components.tsx         # Shared navigation, footer and UI components
@@ -211,6 +233,9 @@ npx -y @insforge/cli link --project-id YOUR_PROJECT_ID
 
 ## Important Notes
 
+- Public browsing stays open, while downloads and flashcard answers require a student account.
+- Authentication cookies are managed through InsForge SSR helpers. Never create, rename or clear auth cookies manually.
+- The app verifies the current student session through `/api/auth/session`; this avoids clearing a newly established session during browser hydration.
 - Student feedback is private and is never shown publicly.
 - Public testimonials are managed only through the admin dashboard.
 - Educator testimonials should be published only with permission.

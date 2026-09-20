@@ -44,8 +44,8 @@ Students use Cue to:
 - choose their semester and subject;
 - read syllabus units and important topics;
 - access notes and recommended learning resources;
-- open or download previous-year question papers;
-- revise with flashcards; and
+- preview previous-year question papers and download them after signing in;
+- revise with flashcards and reveal solutions after signing in; and
 - share private feedback or feature suggestions.
 
 ### Content admin
@@ -94,11 +94,21 @@ If material has not yet been uploaded, Cue does not invent dummy content. It sho
 
 ### PYQs and PDFs
 
-The PYQ area helps students find actual exam papers by subject and year. A student can preview a published paper in the browser and download it when a PDF has been uploaded.
+The PYQ area helps students find actual exam papers by subject and year. A student can preview a published paper in the browser without an account. Downloading a published PDF requires a Cue student account.
 
 ### Flashcards
 
 Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**. Each card has a question or prompt followed by a detailed answer. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
+
+Students can browse flashcard questions freely. Revealing an answer requires a Cue student account.
+
+### Student accounts
+
+Cue supports student accounts through Google or email/password sign-in. A new email/password account is verified through a one-time email code before it can be used.
+
+Students do not have to sign in immediately on entering Cue. The site remains browsable, and authentication is requested only for protected outputs such as PDF downloads and flashcard solutions. When a protected action is selected, Cue opens a compact sign-in modal over the current page. The normal navigation sign-in control opens the complete login page.
+
+After successful sign-in, Google OAuth or email verification, Cue restores the original page and displays the signed-in learner’s name or initial in the navigation. The session is server-verified so it remains available after a page refresh.
 
 ### Feedback page
 
@@ -162,7 +172,8 @@ Only published testimonials appear on the public website.
 3. Choose a semester.
 4. Select a subject.
 5. Open the required section: syllabus, notes, important topics, resources, PYQs or flashcards.
-6. Study, preview/download a paper, or revise with cards.
+6. Study or preview a paper without signing in.
+7. Sign in only when downloading a paper or revealing a flashcard solution.
 
 ### Student: submit feedback
 
@@ -192,6 +203,7 @@ Only published testimonials appear on the public website.
 ## 8. Design and usability requirements
 
 - The experience must work well on mobile phones, tablets and laptops.
+- Login, account creation, email verification and signed-in navigation must work consistently across mobile phones, tablets and laptops.
 - Navigation should always make it clear which page the student is on.
 - Text, controls and touch targets must remain comfortable to read and tap.
 - Public subject pages should prioritise actual study material over long introductory text.
@@ -214,7 +226,7 @@ Content should be accurate, clearly titled and placed in the appropriate subject
 
 ## 10. Current scope
 
-The current Cue product includes the public website, subject discovery, subject workspaces, PYQs, flashcards, private student feedback, public educator testimonials and the admin management dashboard.
+The current Cue product includes the public website, student accounts, protected downloads and flashcard solutions, subject discovery, subject workspaces, PYQs, flashcards, private student feedback, public educator testimonials and the admin management dashboard.
 
 The platform is currently focused on BMS content, with Semester 3 as the primary prepared semester. Additional semesters can be added and managed through the admin dashboard as their content becomes available.
 
@@ -222,7 +234,7 @@ The platform is currently focused on BMS content, with Semester 3 as the primary
 
 These are possible future improvements, not requirements for the current release:
 
-- student accounts and saved study progress;
+- saved study progress for student accounts;
 - bookmarks or favourites;
 - search across subjects and study material;
 - study reminders or revision plans;
