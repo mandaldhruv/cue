@@ -11,6 +11,11 @@ async function adminContext() {
   return session.user && session.isAdmin ? session : null;
 }
 
+async function recordActivity(client: NonNullable<Awaited<ReturnType<typeof adminContext>>>["client"], action: string, entityType: string, entityId: string | null, summary: string) {
+  const { error } = await client.database.from("admin_activity").insert([{ action, entity_type: entityType, entity_id: entityId, summary }]);
+  if (error) console.error("Could not record admin activity", { action, entityType, entityId, message: error.message });
+}
+
 export async function updateFeedback(formData: FormData): Promise<AdminActionResult> {
   const session = await adminContext();
   if (!session) return { ok: false, message: "Your admin session has expired." };
@@ -19,7 +24,8 @@ export async function updateFeedback(formData: FormData): Promise<AdminActionRes
   if (!id || !["new", "reviewed", "resolved", "archived"].includes(status)) return { ok: false, message: "Choose a valid feedback status." };
   const { error } = await session.client.database.from("feedback_submissions").update({ status, admin_note: text(formData, "admin_note") }).eq("id", id);
   if (error) return { ok: false, message: error.message ?? "Feedback could not be updated." };
-  await session.client.database.from("admin_activity").insert([{ action: "status", entity_type: "feedback", entity_id: id, summary: `Feedback marked ${status}` }]);
+  await recordActivity(session.client, "status", "feedback", id, `Feedback marked ${status}`);
+  revalidatePath("/admin");
   revalidatePath("/admin/feedback");
   return { ok: true, message: "Feedback updated." };
 }
@@ -56,7 +62,8 @@ export async function saveTestimonial(formData: FormData): Promise<AdminActionRe
   const entityId = id || data?.[0]?.id || null;
   const oldHeadshotKey = text(formData, "old_headshot_key");
   if (oldHeadshotKey && oldHeadshotKey !== payload.headshot_key) await session.client.storage.from("cue-testimonials").remove(oldHeadshotKey);
-  await session.client.database.from("admin_activity").insert([{ action: id ? "update" : "create", entity_type: "testimonial", entity_id: entityId, summary: `${personName} · ${isPublished ? "published" : "draft"}` }]);
+  await recordActivity(session.client, id ? "update" : "create", "testimonial", entityId, `${personName} · ${isPublished ? "published" : "draft"}`);
+  revalidatePath("/admin");
   revalidatePath("/admin/feedback");
   revalidatePath("/feedback");
   return { ok: true, message: id ? "Testimonial updated." : "Testimonial created." };
@@ -65,10 +72,12 @@ export async function saveTestimonial(formData: FormData): Promise<AdminActionRe
 export async function deleteTestimonial(id: string, headshotKey: string): Promise<AdminActionResult> {
   const session = await adminContext();
   if (!session) return { ok: false, message: "Your admin session has expired." };
+  const { data: testimonial } = await session.client.database.from("testimonials").select("person_name").eq("id", id).limit(1);
   const { error } = await session.client.database.from("testimonials").delete().eq("id", id);
   if (error) return { ok: false, message: error.message ?? "Testimonial could not be deleted." };
   if (headshotKey) await session.client.storage.from("cue-testimonials").remove(headshotKey);
-  await session.client.database.from("admin_activity").insert([{ action: "delete", entity_type: "testimonial", entity_id: id, summary: "Deleted testimonial" }]);
+  await recordActivity(session.client, "delete", "testimonial", id, testimonial?.[0]?.person_name ?? "Deleted testimonial");
+  revalidatePath("/admin");
   revalidatePath("/admin/feedback");
   revalidatePath("/feedback");
   return { ok: true, message: "Testimonial deleted." };

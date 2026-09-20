@@ -25,7 +25,8 @@ async function context() {
 }
 
 async function logAction(client: Awaited<ReturnType<typeof getAdminSession>>["client"], action: string, entityType: string, entityId: string | null, summary: string) {
-  await client.database.from("admin_activity").insert([{ action, entity_type: entityType, entity_id: entityId, summary }]);
+  const { error } = await client.database.from("admin_activity").insert([{ action, entity_type: entityType, entity_id: entityId, summary }]);
+  if (error) console.error("Could not record admin activity", { action, entityType, entityId, message: error.message });
 }
 
 function refreshContent() {
@@ -129,9 +130,10 @@ export async function saveSubject(formData: FormData): Promise<AdminActionResult
 export async function setSubjectPublished(id: string, isPublished: boolean): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: subject } = await session.client.database.from("subjects").select("name").eq("id", id).limit(1);
   const { error } = await session.client.database.from("subjects").update({ is_published: isPublished }).eq("id", id);
   if (error) return fail(error.message ?? "Could not change subject visibility.");
-  await logAction(session.client, "visibility", "subject", id, isPublished ? "Published" : "Moved to draft");
+  await logAction(session.client, "visibility", "subject", id, `${subject?.[0]?.name ?? "Subject"} · ${isPublished ? "published" : "moved to draft"}`);
   refreshContent();
   return { ok: true, message: isPublished ? "Subject published." : "Subject moved to draft." };
 }
@@ -156,12 +158,13 @@ export async function moveSubject(id: string, semesterNumber: number, direction:
 export async function deleteSubject(id: string): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: subject } = await session.client.database.from("subjects").select("name").eq("id", id).limit(1);
   const { data: content, error: countError } = await session.client.database.from("content_items").select("id").eq("subject_id", id).limit(1);
   if (countError) return fail(countError.message ?? "Could not check subject content.");
   if (content?.length) return fail("Remove this subject’s study content first. Nothing was deleted.");
   const { error } = await session.client.database.from("subjects").delete().eq("id", id);
   if (error) return fail(error.message ?? "Could not delete the subject.");
-  await logAction(session.client, "delete", "subject", id, "Deleted empty subject");
+  await logAction(session.client, "delete", "subject", id, subject?.[0]?.name ?? "Deleted empty subject");
   refreshContent();
   return { ok: true, message: "Subject deleted." };
 }
@@ -204,9 +207,9 @@ export async function saveContentItem(formData: FormData): Promise<AdminActionRe
 export async function setContentPublished(id: string, isPublished: boolean): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: card } = await session.client.database.from("content_items").select("title,content_type,flashcard_unit_id,flashcard_topic_id").eq("id", id).limit(1);
+  const item = card?.[0];
   if (isPublished) {
-    const { data: card } = await session.client.database.from("content_items").select("content_type,flashcard_unit_id,flashcard_topic_id").eq("id", id).limit(1);
-    const item = card?.[0];
     if (item?.content_type === "flashcard") {
       if (!item.flashcard_unit_id || !item.flashcard_topic_id) return fail("Assign a unit and topic before publishing this flashcard.");
       const [{ data: unit }, { data: topic }] = await Promise.all([
@@ -218,7 +221,7 @@ export async function setContentPublished(id: string, isPublished: boolean): Pro
   }
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id);
   if (error) return fail(error.message ?? "Could not change content visibility.");
-  await logAction(session.client, "visibility", "content_item", id, isPublished ? "Published" : "Moved to draft");
+  await logAction(session.client, "visibility", "content_item", id, `${item?.title ?? "Study content"} · ${isPublished ? "published" : "moved to draft"}`);
   refreshContent();
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
@@ -247,9 +250,10 @@ export async function moveContentItem(id: string, subjectId: string, contentType
 export async function deleteContentItem(id: string): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: item } = await session.client.database.from("content_items").select("title,content_type").eq("id", id).limit(1);
   const { error } = await session.client.database.from("content_items").delete().eq("id", id);
   if (error) return fail(error.message ?? "Could not delete this content item.");
-  await logAction(session.client, "delete", "content_item", id, "Deleted content item");
+  await logAction(session.client, "delete", "content_item", id, `${item?.[0]?.content_type ?? "content"}: ${item?.[0]?.title ?? "Deleted item"}`);
   refreshContent();
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
@@ -275,13 +279,14 @@ export async function saveFlashcardUnit(formData: FormData): Promise<AdminAction
 export async function deleteFlashcardUnit(id: string): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: unit } = await session.client.database.from("flashcard_units").select("title").eq("id", id).limit(1);
   const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_unit_id", id).limit(1);
   if (cards?.length) return fail("Move or delete this unit’s flashcards first.");
   const { data: topics } = await session.client.database.from("flashcard_topics").select("id").eq("unit_id", id).limit(1);
   if (topics?.length) return fail("Move or delete this unit’s topics first.");
   const { error } = await session.client.database.from("flashcard_units").delete().eq("id", id);
   if (error) return fail(error.message ?? "Could not delete the unit.");
-  await logAction(session.client, "delete", "flashcard_unit", id, "Deleted empty flashcard unit");
+  await logAction(session.client, "delete", "flashcard_unit", id, unit?.[0]?.title ?? "Deleted empty flashcard unit");
   refreshContent(); revalidatePath("/admin/flashcards");
   return { ok: true, message: "Unit deleted." };
 }
@@ -306,11 +311,12 @@ export async function saveFlashcardTopic(formData: FormData): Promise<AdminActio
 export async function deleteFlashcardTopic(id: string): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: topic } = await session.client.database.from("flashcard_topics").select("title").eq("id", id).limit(1);
   const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_topic_id", id).limit(1);
   if (cards?.length) return fail("Move or delete this topic’s flashcards first.");
   const { error } = await session.client.database.from("flashcard_topics").delete().eq("id", id);
   if (error) return fail(error.message ?? "Could not delete the topic.");
-  await logAction(session.client, "delete", "flashcard_topic", id, "Deleted empty flashcard topic");
+  await logAction(session.client, "delete", "flashcard_topic", id, topic?.[0]?.title ?? "Deleted empty flashcard topic");
   refreshContent(); revalidatePath("/admin/flashcards");
   return { ok: true, message: "Topic deleted." };
 }
@@ -435,21 +441,23 @@ export async function savePyq(formData: FormData): Promise<AdminActionResult> {
 export async function setPyqPublished(id: string, isPublished: boolean): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: paper } = await session.client.database.from("content_items").select("title,academic_year").eq("id", id).eq("content_type", "pyq").limit(1);
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id).eq("content_type", "pyq");
   if (error) return fail(error.message ?? "Could not change paper visibility.");
-  await logAction(session.client, "visibility", "pyq", id, isPublished ? "Published" : "Moved to draft");
-  revalidatePath("/admin/pyqs");
-  revalidatePath("/pyqs");
+  await logAction(session.client, "visibility", "pyq", id, `${paper?.[0]?.title ?? "PDF"}${paper?.[0]?.academic_year ? ` · ${paper[0].academic_year}` : ""} · ${isPublished ? "published" : "moved to draft"}`);
+  refreshContent();
+  revalidatePath("/admin/pyqs"); revalidatePath("/pyqs");
   return { ok: true, message: isPublished ? "Paper published." : "Paper moved to draft." };
 }
 
 export async function deletePyq(id: string, fileKey: string): Promise<AdminActionResult> {
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
+  const { data: paper } = await session.client.database.from("content_items").select("title,academic_year").eq("id", id).eq("content_type", "pyq").limit(1);
   const { error } = await session.client.database.from("content_items").delete().eq("id", id).eq("content_type", "pyq");
   if (error) return fail(error.message ?? "Could not delete this paper.");
   if (fileKey) await session.client.storage.from("cue-pyqs").remove(fileKey);
-  await logAction(session.client, "delete", "pyq", id, "Deleted paper and stored PDF");
+  await logAction(session.client, "delete", "pyq", id, `${paper?.[0]?.title ?? "Deleted paper"}${paper?.[0]?.academic_year ? ` · ${paper[0].academic_year}` : ""}`);
   refreshContent();
   revalidatePath("/admin/pyqs");
   revalidatePath("/pyqs");

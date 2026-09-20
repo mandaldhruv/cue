@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { navItems, Subject } from "./data";
+import { useAuth } from "./auth/AuthProvider";
+import { signOutAction } from "./login/actions";
 
 export function Logo() {
   return (
@@ -16,7 +18,11 @@ export function Logo() {
 
 export function Navigation() {
   const pathname = usePathname();
+  const { user, loading, refreshUser } = useAuth();
   const isActive = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const displayName = user?.profile?.name?.trim() || user?.email.split("@")[0] || "Cue learner";
+  const initial = displayName.slice(0, 1).toUpperCase();
+  async function signOut() { await signOutAction(); await refreshUser(); }
   return (
     <header className="site-header">
       <div className="container nav-inner">
@@ -24,10 +30,10 @@ export function Navigation() {
         <nav className="desktop-nav" aria-label="Main navigation">
           {navItems.map((item) => <Link className={isActive(item.href) ? "active" : ""} aria-current={isActive(item.href) ? "page" : undefined} href={item.href} key={item.href}><span>{item.label}</span></Link>)}
         </nav>
-        <Link className="nav-button" href="/subjects" aria-label="Start studying: open BMS subjects">BMS Subjects <span>↗</span></Link>
+        {loading ? <span className="nav-account-loading" aria-label="Loading account"/> : user ? <details className="nav-account"><summary><i>{initial}</i><span><b>{displayName}</b><small>{user.email}</small></span><em>⌄</em></summary><div><span>YOUR CUE ACCOUNT</span><b>{displayName}</b><small>{user.email}</small><button onClick={signOut}>Sign out <i>→</i></button></div></details> : <Link className="nav-button nav-auth-button" href={`/login?next=${encodeURIComponent(pathname)}`} aria-label="Sign in or create a Cue account"><span className="nav-auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0"/></svg></span><span><b>Sign in</b><small>or create account</small></span></Link>}
         <details className="mobile-nav">
           <summary aria-label="Open menu"><span /><span /></summary>
-          <div>{navItems.map((item) => <Link className={isActive(item.href) ? "active" : ""} aria-current={isActive(item.href) ? "page" : undefined} href={item.href} key={item.href}>{item.label}<span>→</span></Link>)}</div>
+          <div>{navItems.map((item) => <Link className={isActive(item.href) ? "active" : ""} aria-current={isActive(item.href) ? "page" : undefined} href={item.href} key={item.href}>{item.label}<span>→</span></Link>)}<div className="mobile-account-divider"/>{user ? <><div className="mobile-account-copy"><i>{initial}</i><span><b>{displayName}</b><small>{user.email}</small></span></div><button className="mobile-signout" onClick={signOut}>Sign out <span>→</span></button></> : <Link className="mobile-signin" href={`/login?next=${encodeURIComponent(pathname)}`}>Sign in / Sign up<span className="mobile-signin-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0"/></svg></span></Link>}</div>
         </details>
       </div>
     </header>

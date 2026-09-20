@@ -1,4 +1,4 @@
-# Cue — Product Requirements Document
+# Cue: Product Requirements Document
 
 **Product:** Cue  
 **Tagline:** Study smarter. Stress less.  
@@ -13,7 +13,7 @@ Cue is a central study platform for BMS students. It brings the material student
 
 Instead of spending time looking for the correct note, syllabus unit, past paper or revision question, a student can open their subject and start studying from the relevant material immediately.
 
-Cue is designed to feel calm, premium and easy to use on phones, tablets and laptops. It is a study workspace—not a cluttered content library.
+Cue is designed to feel calm, premium and easy to use on phones, tablets and laptops. It is a study workspace, not a cluttered content library.
 
 ## 2. Problem being solved
 
@@ -37,7 +37,7 @@ Cue solves this by giving students one organised place for their subjects and gi
 
 ## 4. Who Cue is for
 
-### Primary users — BMS students
+### Primary users: BMS students
 
 Students use Cue to:
 
@@ -62,12 +62,12 @@ Educator testimonials can be displayed on the public Feedback page. These are ma
 
 The public navigation includes:
 
-- **Home** — the BMS-focused introduction to Cue and a direct route to subjects.
-- **Subjects** — the main entry point for organised study material.
-- **Flashcards** — active-recall revision decks grouped by subject.
-- **PYQs** — previous-year question papers organised for quick access.
-- **Feedback** — student feedback form and educator testimonials.
-- **About** — Cue’s purpose and approach.
+- **Home:** the BMS-focused introduction to Cue and a direct route to subjects.
+- **Subjects:** the main entry point for organised study material.
+- **Flashcards:** active-recall revision decks grouped by subject.
+- **PYQs:** previous-year question papers organised for quick access.
+- **Feedback:** student feedback form and educator testimonials.
+- **About:** Cue’s purpose and approach.
 
 ### Home page
 
@@ -83,12 +83,12 @@ For an available semester, students see the published subjects. If a semester ha
 
 When a student opens a subject, they see only material that has been published by the admin. The subject workspace can include:
 
-- **Syllabus** — units and detailed topic coverage.
-- **Important topics / Exam focus** — high-priority topics for revision.
-- **Notes** — explanations, revision notes and useful links.
-- **Recommended resources** — books, videos or external learning links.
-- **PYQs** — previous-year papers, grouped by academic year.
-- **Flashcards** — question-and-answer revision cards for that subject.
+- **Syllabus:** units and detailed topic coverage.
+- **Important topics / Exam focus:** high-priority topics for revision.
+- **Notes:** explanations, revision notes and useful links.
+- **Recommended resources:** books, videos or external learning links.
+- **PYQs:** previous-year papers, grouped by academic year.
+- **Flashcards:** question-and-answer revision cards for that subject.
 
 If material has not yet been uploaded, Cue does not invent dummy content. It shows an honest empty or coming-soon state.
 
@@ -132,8 +132,8 @@ The dashboard is divided into practical sections:
 
 Every major item can be saved as either:
 
-- **Draft** — visible only in the admin dashboard; or
-- **Published / Live** — visible to students on the public website.
+- **Draft:** visible only in the admin dashboard; or
+- **Published / Live:** visible to students on the public website.
 
 This allows content to be prepared in advance and checked before students can access it.
 
@@ -161,7 +161,7 @@ Only published testimonials appear on the public website.
 2. Select **BMS Subjects** or **Subjects**.
 3. Choose a semester.
 4. Select a subject.
-5. Open the required section—syllabus, notes, important topics, resources, PYQs or flashcards.
+5. Open the required section: syllabus, notes, important topics, resources, PYQs or flashcards.
 6. Study, preview/download a paper, or revise with cards.
 
 ### Student: submit feedback
@@ -243,4 +243,4 @@ Cue is successful when:
 
 ---
 
-**Product positioning:** Cue is the organised study space for BMS students—one calm place for the material they need to learn, revise and prepare with confidence.
+**Product positioning:** Cue is the organised study space for BMS students, one calm place for the material they need to learn, revise and prepare with confidence.

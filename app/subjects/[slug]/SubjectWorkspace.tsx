@@ -68,7 +68,7 @@ export default function SubjectWorkspace({ subject, content, loadError }: { subj
         {active === "flashcard" && <FlashcardPlayer cards={groups.flashcard.map(({ id, title, description, body }) => ({ id, title, description, body }))} subjectName={subject.name}/>} 
         {active === "recommended_resource" && (groups.recommended_resource.length ? <div className="workspace-resource-list">{groups.recommended_resource.map((item, index) => <article key={item.id}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3>{item.description && <p>{item.description}</p>}{item.body && <div className="workspace-body">{item.body}</div>}</div><ExternalLink href={item.file_url}>Open resource</ExternalLink></article>)}</div> : <EmptyState type={active} subjectName={subject.name}/>) }
       </div>}
-      {!loadError && total === 0 && <p className="workspace-honesty-note">Nothing has been published for this subject yet—no placeholder material is shown.</p>}
+      {!loadError && total === 0 && <p className="workspace-honesty-note">Nothing has been published for this subject yet. No placeholder material is shown.</p>}
     </div></section>
   </>;
 }

@@ -223,7 +223,7 @@ npx -y @insforge/cli link --project-id YOUR_PROJECT_ID
 
 Cue is more than a material library.
 
-It is a calmer, cleaner and more focused way for BMS students to study—one place to find what matters, revise better and prepare with confidence.
+It is a calmer, cleaner and more focused way for BMS students to study: one place to find what matters, revise better and prepare with confidence.
 
 ---
 

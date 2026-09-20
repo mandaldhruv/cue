@@ -55,7 +55,7 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
   return <>
     <div className="community-overview">
       <div><span>NEW FEEDBACK</span><b>{feedback.filter((item) => item.status === "new").length}</b><small>Waiting for review</small></div>
-      <div><span>AVERAGE RATING</span><b>{feedback.length ? (feedback.reduce((sum, item) => sum + item.rating, 0) / feedback.length).toFixed(1) : "—"}</b><small>Student experience</small></div>
+      <div><span>AVERAGE RATING</span><b>{feedback.length ? (feedback.reduce((sum, item) => sum + item.rating, 0) / feedback.length).toFixed(1) : "N/A"}</b><small>Student experience</small></div>
       <div><span>LIVE TESTIMONIALS</span><b>{testimonials.filter((item) => item.is_published).length}</b><small>Visible publicly</small></div>
       <button onClick={() => { setTab("testimonials"); setCreating(true); setEditing(null); }}>+ Add testimonial</button>
     </div>
@@ -63,7 +63,7 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
     {notice && <div className={`admin-notice ${notice.ok ? "success" : "error"}`}>{notice.message}<button onClick={() => setNotice(null)}>×</button></div>}
 
     {tab === "feedback" ? <section className="feedback-inbox">
-      <div className="feedback-inbox-bar"><div><b>Student inbox</b><span>Private responses—never shown publicly.</span></div><label><span>STATUS</span><select value={filter} onChange={(event) => setFilter(event.target.value as FeedbackStatus | "all")}><option value="all">All feedback</option>{statuses.map((status) => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}</select></label></div>
+      <div className="feedback-inbox-bar"><div><b>Student inbox</b><span>Private responses, never shown publicly.</span></div><label><span>STATUS</span><select value={filter} onChange={(event) => setFilter(event.target.value as FeedbackStatus | "all")}><option value="all">All feedback</option>{statuses.map((status) => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}</select></label></div>
       <div className="feedback-inbox-list">{visibleFeedback.length ? visibleFeedback.map((item) => <button key={item.id} onClick={() => setSelectedFeedback(item)}><span className={`feedback-rating rating-${item.rating}`}>{"★".repeat(item.rating)}</span><div><span>{item.category} · {item.student_year}</span><b>{item.message}</b><small>{new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}{item.is_content_issue ? " · Content issue" : ""}</small></div><i className={`feedback-status ${item.status}`}>{item.status}</i><strong>→</strong></button>) : <div className="admin-empty"><b>No feedback in this view</b><p>New student responses will appear here automatically.</p></div>}</div>
     </section> : <section className="testimonial-admin-list">
       <div className="admin-toolbar"><div><b>Curated voices</b><span>Only consented, published testimonials appear on the student Feedback page.</span></div><button onClick={() => { setCreating(true); setEditing(null); }}>+ Add testimonial</button></div>

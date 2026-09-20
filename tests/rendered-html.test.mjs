@@ -6,8 +6,9 @@ const root = new URL("../", import.meta.url);
 const source = (path) => readFile(new URL(path, root), "utf8");
 
 test("ships Cue metadata and the intended public routes", async () => {
-  const [layout, home, subjects, flashcards, pyqs, feedback] = await Promise.all([
+  const [layout, adminLayout, home, subjects, flashcards, pyqs, feedback] = await Promise.all([
     source("app/layout.tsx"),
+    source("app/admin/layout.tsx"),
     source("app/page.tsx"),
     source("app/subjects/page.tsx"),
     source("app/flashcards/page.tsx"),
@@ -15,8 +16,9 @@ test("ships Cue metadata and the intended public routes", async () => {
     source("app/feedback/page.tsx"),
   ]);
 
-  assert.match(layout, /Cue — Study smarter\. Stress less\./);
-  assert.match(layout, /cue-favicon-original\.png/);
+  assert.match(layout, /Cue \| Study smarter\. Stress less\./);
+  assert.match(adminLayout, /title: "Cue Admin"/);
+  assert.match(layout, /Favicon\.png/);
   assert.match(home, /BMS STUDENTS/);
   assert.doesNotMatch(home, />Explore subjects</i);
   assert.doesNotMatch(home, /home-action-hub/);
@@ -45,12 +47,14 @@ test("ships structured, admin-owned flashcards without seeded examples", async (
   assert.doesNotMatch(migration, /INSERT INTO public\.(flashcard_units|flashcard_topics|content_items)/);
 });
 
-test("keeps admin access private and checks database membership", async () => {
-  const [loginPage, loginForm, actions, server, config] = await Promise.all([
+test("keeps admin access private, checks membership and renders fresh IST activity", async () => {
+  const [loginPage, loginForm, actions, server, dashboard, dashboardRefresh, config] = await Promise.all([
     source("app/admin/login/page.tsx"),
     source("app/admin/login/AdminLoginForm.tsx"),
     source("app/admin/actions.ts"),
     source("app/lib/insforge/server.ts"),
+    source("app/admin/page.tsx"),
+    source("app/admin/AdminDashboardRefresh.tsx"),
     source("insforge.toml"),
   ]);
 
@@ -59,7 +63,38 @@ test("keeps admin access private and checks database membership", async () => {
   assert.doesNotMatch(`${loginPage}\n${loginForm}`, /first[- ]time setup|sign up/i);
   assert.match(actions, /signInWithPassword/);
   assert.match(server, /rpc\("is_cue_admin"\)/);
-  assert.match(config, /disable_signup\s*=\s*true/);
+  assert.match(dashboard, /timeZone: "Asia\/Kolkata"/);
+  assert.match(dashboard, /select\("id,action,summary,entity_type,created_at"\)/);
+  assert.match(dashboardRefresh, /30_000/);
+  assert.match(dashboardRefresh, /visibilitychange/);
+  assert.match(config, /disable_signup\s*=\s*false/);
+});
+
+test("supports public browsing with persistent student sessions and modal login gates", async () => {
+  const [login, actions, navigation, pyqs, flashcards, authProvider, sessionRoute, config] = await Promise.all([
+    source("app/login/LoginPanel.tsx"),
+    source("app/login/actions.ts"),
+    source("app/components.tsx"),
+    source("app/pyqs/PyqLibrary.tsx"),
+    source("app/flashcards/FlashcardDeck.tsx"),
+    source("app/auth/AuthProvider.tsx"),
+    source("app/api/auth/session/route.ts"),
+    source("insforge.toml"),
+  ]);
+
+  assert.match(login, /Continue with Google/);
+  assert.match(login, /Create account/);
+  assert.match(actions, /signInWithPassword/);
+  assert.match(actions, /verifyEmail/);
+  assert.match(navigation, /Sign in \/ Sign up/);
+  assert.match(pyqs, /await requireLogin\(\)/);
+  assert.match(flashcards, /await requireLogin\(\)/);
+  assert.match(authProvider, /cue-auth-modal-backdrop/);
+  assert.match(authProvider, /fetch\("\/api\/auth\/session"/);
+  assert.doesNotMatch(authProvider, /createBrowserClient/);
+  assert.match(sessionRoute, /getCurrentUser\(\)/);
+  assert.match(sessionRoute, /no-store/);
+  assert.match(config, /cue-study\.insforge\.site\/api\/auth\/callback/);
 });
 
 test("protects admin writes and prevents duplicate PYQ submissions", async () => {
@@ -72,6 +107,7 @@ test("protects admin writes and prevents duplicate PYQ submissions", async () =>
   assert.match(contentActions, /session\.user\s*\|\|\s*!session\.isAdmin/);
   assert.match(pyqManager, /submittingRef\.current/);
   assert.match(pyqManager, /submission_id/);
+  assert.match(pyqManager, /formData\.delete\("pdf"\)/);
   assert.match(migration, /content_items_pyq_submission_unique/);
   assert.match(migration, /WHERE content_type = 'pyq'/);
 });

@@ -30,7 +30,7 @@ export default function AdminScopePicker({
       onSemesterChange(nextSemester, firstSubjectId);
     }}>{semesters.map((item) => <option key={item} value={item}>Semester {item}</option>)}</select></label>
     <span className="admin-scope-arrow">→</span>
-    <label><span>SUBJECT</span><select value={subjectId} disabled={!scopedSubjects.length} onChange={(event) => onSubjectChange(event.target.value)}>{scopedSubjects.length ? scopedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.short_code} — {subject.name}</option>) : <option>No subjects available</option>}</select></label>
+    <label><span>SUBJECT</span><select value={subjectId} disabled={!scopedSubjects.length} onChange={(event) => onSubjectChange(event.target.value)}>{scopedSubjects.length ? scopedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.short_code} · {subject.name}</option>) : <option>No subjects available</option>}</select></label>
     <div className="admin-scope-detail"><span>PUBLIC PLACEMENT</span><b>{detail}</b></div>
   </section>;
 }
