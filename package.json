@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "greetings:import": "node scripts/import-greetings.mjs",
     "lint": "eslint app proxy.ts tests --ignore-pattern .next --ignore-pattern dist --ignore-pattern .vinext --ignore-pattern .wrangler --ignore-pattern build --ignore-pattern worker",
     "db:generate": "drizzle-kit generate"
   },

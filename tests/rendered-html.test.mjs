@@ -33,10 +33,12 @@ test("ships Cue metadata and the intended public routes", async () => {
 });
 
 test("ships structured, admin-owned flashcards without seeded examples", async () => {
-  const [manager, deck, migration] = await Promise.all([
+  const [manager, actions, deck, migration, cascadeMigration] = await Promise.all([
     source("app/admin/flashcards/FlashcardManager.tsx"),
+    source("app/admin/content-actions.ts"),
     source("app/flashcards/FlashcardDeck.tsx"),
     source("migrations/20260908174946_build-flashcard-learning-system.sql"),
+    source("migrations/20260920175005_cascade-flashcard-deletions.sql"),
   ]);
 
   assert.match(manager, /saveFlashcardUnit/);
@@ -45,6 +47,12 @@ test("ships structured, admin-owned flashcards without seeded examples", async (
   assert.match(migration, /CREATE TABLE public\.flashcard_units/);
   assert.match(migration, /CREATE TABLE public\.flashcard_topics/);
   assert.doesNotMatch(migration, /INSERT INTO public\.(flashcard_units|flashcard_topics|content_items)/);
+  assert.doesNotMatch(actions, /Move or delete this (unit|topic)/);
+  assert.match(actions, /\.delete\(\)\.eq\("id", id\)\.select\("id"\)/);
+  assert.match(manager, /unitDeleteMessage/);
+  assert.match(manager, /topicDeleteMessage/);
+  assert.match(cascadeMigration, /content_items_flashcard_unit_subject_fkey[\s\S]*ON DELETE CASCADE/);
+  assert.match(cascadeMigration, /content_items_flashcard_topic_scope_fkey[\s\S]*ON DELETE CASCADE/);
 });
 
 test("keeps admin access private, checks membership and renders fresh IST activity", async () => {

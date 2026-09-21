@@ -73,6 +73,8 @@ The public navigation includes:
 
 The home page introduces Cue as a study platform built for BMS students. It directs students toward the subject area rather than making them read long marketing copy.
 
+After authentication, the Home page alone shows a compact personalized greeting immediately below the navigation. The greeting uses the learner's verified profile name and must not appear on Subjects, Flashcards, PYQs, Feedback, About or legal pages. Unauthenticated visitors do not see it.
+
 ### Subjects page
 
 Students can select a semester. Semester 3 is currently the primary BMS semester.
@@ -109,6 +111,12 @@ Cue supports student accounts through Google or email/password sign-in. A new em
 Students do not have to sign in immediately on entering Cue. The site remains browsable, and authentication is requested only for protected outputs such as PDF downloads and flashcard solutions. When a protected action is selected, Cue opens a compact sign-in modal over the current page. The normal navigation sign-in control opens the complete login page.
 
 After successful sign-in, Google OAuth or email verification, Cue restores the original page and displays the signed-in learner’s name or initial in the navigation. The session is server-verified so it remains available after a page refresh.
+
+### Greeting sequence
+
+Cue maintains separate Admin and Student greeting collections. Each collection contains 100 messages for each of eight three-hour IST (`Asia/Kolkata`) blocks. Messages advance sequentially, never randomly.
+
+The authoritative position is stored per authenticated user, audience and time block in InsForge. It continues across devices, browsers and days, and rolls from 100 to 1. A single display-event identifier is idempotent so hydration, retries or React Strict Mode cannot consume two messages for one page entry. Concurrent devices reserve different messages atomically. The Admin greeting enhances the main dashboard heading; Student greetings remain restricted to the public Home page. An authorised Admin can use both surfaces, but the two audience counters and message collections remain independent.
 
 ### Feedback page
 

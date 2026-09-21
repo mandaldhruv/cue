@@ -30,9 +30,11 @@ export default function AboutPage() {
           </div>
           <div className="creator-card">
             <div className="creator-avatar">HS</div>
-            <div><span>CREATED BY</span><h2>Harshita Singh</h2><p>Have suggestions or found an error? I’d love to hear your feedback.</p></div>
-            <div className="creator-actions">
-              <a
+            <div className="creator-copy">
+              <span>CREATED BY</span>
+              <div className="creator-name-row">
+                <h2>Harshita Singh</h2>
+                <a
                 className="creator-linkedin"
                 href="https://www.linkedin.com/in/harshitasingh144"
                 target="_blank"
@@ -43,7 +45,8 @@ export default function AboutPage() {
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M6.5 8.3H3.2V19h3.3V8.3ZM4.9 3A1.9 1.9 0 1 0 5 6.8 1.9 1.9 0 0 0 4.9 3ZM19.8 12.9c0-3.2-1.7-4.8-4.1-4.8a3.6 3.6 0 0 0-3.3 1.8V8.3H9.2V19h3.3v-5.3c0-1.4.3-2.8 2-2.8s2 1.6 2 2.9V19h3.3v-6.1Z" />
                 </svg>
-              </a>
+                </a>
+              </div>
             </div>
           </div>
         </div>

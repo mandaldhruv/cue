@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Footer, Navigation, SubjectCard } from "./components";
 import CountUpStats from "./CountUpStats";
+import { HomeGreeting } from "./greetings/GreetingDisplay";
 import { createInsForgeServerClient } from "./lib/insforge/server";
 import type { Subject } from "./data";
 
@@ -19,12 +20,13 @@ export default async function Home() {
   const topics = (contentRows ?? []).filter((item: { content_type: string }) => item.content_type === "important_topic").slice(0, 4) as { id: string; title: string; description: string; body: string }[];
   return <>
     <Navigation />
+    <HomeGreeting />
     <main>
       <section className="new-hero">
         <div className="hero-wash" />
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="bms-hero-badge"><i>✦</i><span><small>BUILT EXCLUSIVELY FOR</small><b>BMS STUDENTS</b></span></span>
+            <span className="bms-hero-badge"><i aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><rect x="5" y="4" width="12" height="15" rx="2"/><path d="M9 8h8a2 2 0 0 1 2 2v10H9a2 2 0 0 1-2-2V6"/><path d="M11 12h5M11 15h4"/></svg></i><span><small>BUILT EXCLUSIVELY FOR</small><b>BMS STUDENTS</b></span></span>
             <h1>Your complete<br /><em>BMS study space.</em></h1>
             <p>Semester-wise notes, PYQs, flashcards and exam insights, created around what BMS students actually need.</p>
             <CountUpStats subjects={subjects.length} resources={contentRows?.length ?? 0} semesters={semesterRows?.length ?? 0}/>

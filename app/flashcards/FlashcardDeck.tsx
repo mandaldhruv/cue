@@ -66,6 +66,23 @@ export default function FlashcardDeck({ units, topics, cards, subjectName }: { u
       <div className="flashcard-question-list"><div className="flashcard-question-heading"><span>{selectedTopic?.title ?? "Questions"}</span><small>{visibleCards.length} {visibleCards.length === 1 ? "question" : "questions"}</small></div>{visibleCards.length ? visibleCards.map((card, index) => <button key={card.id} onClick={() => open(index)}><i>{String(index + 1).padStart(2, "0")}</i><span><b>{card.title}</b>{card.description && <small>{card.description}</small>}</span><strong>View solution <em>→</em></strong></button>) : <div className="study-empty"><h3>No cards in this topic yet.</h3><p>Only content published by the admin appears here.</p></div>}</div>
     </section>
 
-    {viewerCard && <div className="flashcard-viewer-backdrop" role="dialog" aria-modal="true" aria-label="Flashcard viewer" onMouseDown={() => setViewerIndex(null)}><article className="flashcard-viewer" onMouseDown={(event) => event.stopPropagation()}><header><div><span>{selectedTopic?.title ?? "FLASHCARD"}</span><small>{(viewerIndex ?? 0) + 1} / {visibleCards.length}</small></div><button onClick={() => setViewerIndex(null)} aria-label="Close flashcard">×</button></header><div className="flashcard-viewer-scroll"><section><span>QUESTION</span><RichContent document={viewerCard.question_document} fallback={viewerCard.title}/>{viewerCard.description && <aside><b>Hint</b><p>{viewerCard.description}</p></aside>}</section><button className="view-solution" onClick={toggleSolution} aria-expanded={revealed}>{revealed ? "Hide solution" : "View solution"}<span>{revealed ? "↑" : "↓"}</span></button><section className={`flashcard-solution ${revealed ? "revealed" : ""}`} aria-hidden={!revealed}><div><span>ANSWER</span><RichContent document={viewerCard.answer_document} fallback={viewerCard.body}/></div></section></div><footer><button onClick={() => move(-1)} disabled={!canMovePrevious}>← Previous</button><span>{(viewerIndex ?? 0) + 1} of {visibleCards.length}</span><button onClick={() => move(1)} disabled={!canMoveNext}>Next →</button></footer></article></div>}
+    {viewerCard && <div className="flashcard-viewer-backdrop" role="dialog" aria-modal="true" aria-label="Flashcard viewer" onMouseDown={() => setViewerIndex(null)}><article className="flashcard-viewer" onMouseDown={(event) => event.stopPropagation()}>
+      <header><div><span>{selectedTopic?.title ?? "FLASHCARD"}</span><small>{(viewerIndex ?? 0) + 1} / {visibleCards.length}</small></div><button onClick={() => setViewerIndex(null)} aria-label="Close flashcard">×</button></header>
+      <div className="flashcard-stage">
+        <div className={`flashcard-flip-card ${revealed ? "is-flipped" : ""}`}>
+          <section className="flashcard-face flashcard-question-face" aria-hidden={revealed}>
+            <div className="flashcard-face-label"><span>QUESTION</span><small>Think before you reveal</small></div>
+            <div className="flashcard-face-content"><RichContent document={viewerCard.question_document} fallback={viewerCard.title}/>{viewerCard.description && <aside><b>Hint</b><p>{viewerCard.description}</p></aside>}</div>
+            <button type="button" className="view-solution" onClick={toggleSolution} tabIndex={revealed ? -1 : 0}>View solution <span>↻</span></button>
+          </section>
+          <section className="flashcard-face flashcard-answer-face" aria-hidden={!revealed}>
+            <div className="flashcard-face-label"><span>ANSWER</span><small>Active recall</small></div>
+            <div className="flashcard-face-content"><RichContent document={viewerCard.answer_document} fallback={viewerCard.body}/></div>
+            <button type="button" className="show-question" onClick={toggleSolution} tabIndex={revealed ? 0 : -1}>Show question <span>↻</span></button>
+          </section>
+        </div>
+      </div>
+      <footer><button onClick={() => move(-1)} disabled={!canMovePrevious}>← Previous</button><span>{(viewerIndex ?? 0) + 1} of {visibleCards.length}</span><button onClick={() => move(1)} disabled={!canMoveNext}>Next →</button></footer>
+    </article></div>}
   </div>;
 }

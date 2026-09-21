@@ -251,13 +251,14 @@ export async function deleteContentItem(id: string): Promise<AdminActionResult> 
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
   const { data: item } = await session.client.database.from("content_items").select("title,content_type").eq("id", id).limit(1);
-  const { error } = await session.client.database.from("content_items").delete().eq("id", id);
+  const { data: deleted, error } = await session.client.database.from("content_items").delete().eq("id", id).select("id");
   if (error) return fail(error.message ?? "Could not delete this content item.");
+  if (!deleted?.length) return fail("This content item was not found or could not be deleted. Refresh the page and try again.");
   await logAction(session.client, "delete", "content_item", id, `${item?.[0]?.content_type ?? "content"}: ${item?.[0]?.title ?? "Deleted item"}`);
   refreshContent();
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
-  return { ok: true, message: "Content item deleted." };
+  return { ok: true, message: item?.[0]?.content_type === "flashcard" ? "Flashcard deleted." : "Content item deleted." };
 }
 
 export async function saveFlashcardUnit(formData: FormData): Promise<AdminActionResult> {
@@ -280,15 +281,12 @@ export async function deleteFlashcardUnit(id: string): Promise<AdminActionResult
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
   const { data: unit } = await session.client.database.from("flashcard_units").select("title").eq("id", id).limit(1);
-  const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_unit_id", id).limit(1);
-  if (cards?.length) return fail("Move or delete this unit’s flashcards first.");
-  const { data: topics } = await session.client.database.from("flashcard_topics").select("id").eq("unit_id", id).limit(1);
-  if (topics?.length) return fail("Move or delete this unit’s topics first.");
-  const { error } = await session.client.database.from("flashcard_units").delete().eq("id", id);
+  const { data: deleted, error } = await session.client.database.from("flashcard_units").delete().eq("id", id).select("id");
   if (error) return fail(error.message ?? "Could not delete the unit.");
-  await logAction(session.client, "delete", "flashcard_unit", id, unit?.[0]?.title ?? "Deleted empty flashcard unit");
+  if (!deleted?.length) return fail("This unit was not found or could not be deleted. Refresh the page and try again.");
+  await logAction(session.client, "delete", "flashcard_unit", id, `${unit?.[0]?.title ?? "Deleted flashcard unit"} (including all topics and flashcards)`);
   refreshContent(); revalidatePath("/admin/flashcards");
-  return { ok: true, message: "Unit deleted." };
+  return { ok: true, message: "Unit, its topics and all included flashcards deleted." };
 }
 
 export async function saveFlashcardTopic(formData: FormData): Promise<AdminActionResult> {
@@ -312,13 +310,12 @@ export async function deleteFlashcardTopic(id: string): Promise<AdminActionResul
   const session = await context();
   if (!session) return fail("Your admin session has expired.");
   const { data: topic } = await session.client.database.from("flashcard_topics").select("title").eq("id", id).limit(1);
-  const { data: cards } = await session.client.database.from("content_items").select("id").eq("flashcard_topic_id", id).limit(1);
-  if (cards?.length) return fail("Move or delete this topic’s flashcards first.");
-  const { error } = await session.client.database.from("flashcard_topics").delete().eq("id", id);
+  const { data: deleted, error } = await session.client.database.from("flashcard_topics").delete().eq("id", id).select("id");
   if (error) return fail(error.message ?? "Could not delete the topic.");
-  await logAction(session.client, "delete", "flashcard_topic", id, topic?.[0]?.title ?? "Deleted empty flashcard topic");
+  if (!deleted?.length) return fail("This topic was not found or could not be deleted. Refresh the page and try again.");
+  await logAction(session.client, "delete", "flashcard_topic", id, `${topic?.[0]?.title ?? "Deleted flashcard topic"} (including all flashcards)`);
   refreshContent(); revalidatePath("/admin/flashcards");
-  return { ok: true, message: "Topic deleted." };
+  return { ok: true, message: "Topic and all included flashcards deleted." };
 }
 
 export async function moveFlashcardTopic(id: string, unitId: string, direction: "up" | "down"): Promise<AdminActionResult> {

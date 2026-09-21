@@ -38,6 +38,7 @@ Cue helps students find the right material quickly by organising it semester-wis
 - Email verification for newly created student accounts
 - Login required only for protected outputs: PDF downloads and flashcard solutions
 - Persistent student sessions, with the signed-in learner shown in the navigation
+- A personalized home greeting that rotates sequentially by authenticated learner and IST time block
 - Clear empty and coming-soon states when content is not available
 - Private feedback form for student suggestions and issue reporting
 - Educator testimonials managed by the admin
@@ -57,6 +58,8 @@ Cue includes a private admin workspace for managing all study material without e
 | PYQs & PDFs | Upload, replace, publish and manage question-paper PDFs |
 | Feedback | Review private student feedback and update review status |
 | Testimonials | Add approved educator testimonials with optional headshots |
+
+The main admin dashboard heading also uses Cue's private Admin greeting collection. Student and Admin greeting sequences are isolated from one another. An authorised Admin using the public Home page can still receive the Home-page Student collection without affecting the Admin sequence.
 
 ---
 
@@ -90,6 +93,18 @@ The protected-action flow opens a compact Cue login modal over the current page.
 
 After a successful Google, email/password or email-verification flow, the student returns to the original page with a persistent server-verified session. Their name or email-based initial appears in the navigation, where they can also sign out.
 
+## Personalized Greetings
+
+Authenticated students see one compact personalized greeting directly below the navigation on the Home page only. The Admin sees the corresponding Admin greeting in the dashboard heading.
+
+- The current message pool is selected using `Asia/Kolkata` time and eight exact three-hour blocks.
+- Each authenticated account has an independent sequence for every time block.
+- Sequences persist across browsers, devices and days, and roll from message 100 back to message 1.
+- A database transaction reserves each message atomically, while a unique display-event ID makes client retries and React Strict Mode safe.
+- Unauthenticated visitors do not receive a personalized greeting.
+
+The 1,600 supplied messages are bundled in `app/greetings/greeting-messages.generated.json`. Maintainers can regenerate that file from the approved Markdown source with `scripts/import-greetings.mjs`; the importer validates all 16 collections and their original order.
+
 ---
 
 ## Tech Stack
@@ -112,9 +127,11 @@ app/
 ├── admin/                 # Private admin dashboard
 ├── about/                 # About Cue page
 ├── api/auth/              # OAuth callback, refresh and current-session routes
+├── api/greetings/         # Authenticated greeting reservation endpoint
 ├── auth/                  # Client auth context, session state and protected-action modal
 ├── feedback/              # Feedback form and testimonials
 ├── flashcards/            # Flashcard library and card player
+├── greetings/             # Greeting UI and exact generated message collection
 ├── login/                 # Student sign-in, account creation and email verification
 ├── pyqs/                  # Previous-year paper library
 ├── subjects/              # Semester, subject and study workspace pages
