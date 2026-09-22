@@ -31,9 +31,15 @@ export type RichImageBlock = {
   caption?: string;
 };
 
+export type RichFormulaBlock = {
+  id: string;
+  type: "formula";
+  expression: string;
+};
+
 export type RichDocument = {
   version: 1;
-  blocks: Array<RichTextBlock | RichListBlock | RichTableBlock | RichImageBlock>;
+  blocks: Array<RichTextBlock | RichListBlock | RichTableBlock | RichImageBlock | RichFormulaBlock>;
 };
 
 export const emptyRichDocument = (): RichDocument => ({ version: 1, blocks: [] });
@@ -50,6 +56,7 @@ export function isRichDocument(value: unknown): value is RichDocument {
     if (block.type === "bulletList" || block.type === "numberList") return Array.isArray(block.items) && block.items.length <= 100 && block.items.every((item) => typeof item === "string");
     if (block.type === "table") return Array.isArray(block.rows) && block.rows.length <= 50 && block.rows.every((row) => Array.isArray(row) && row.length <= 20 && row.every((cell) => typeof cell === "string"));
     if (block.type === "image") return typeof block.url === "string" && typeof block.key === "string" && typeof block.alt === "string" && (block.caption === undefined || typeof block.caption === "string");
+    if (block.type === "formula") return typeof block.expression === "string";
     return false;
   });
 }
@@ -65,6 +72,7 @@ export function richDocumentText(document: RichDocument): string {
     if (block.type === "bulletList" || block.type === "numberList") return block.items.join(" ");
     if (block.type === "table") return block.rows.flat().join(" ");
     if (block.type === "image") return block.alt || block.caption || "Image";
+    if (block.type === "formula") return block.expression;
     return "";
   }).join(" ").replace(/\s+/g, " ").trim();
 }
@@ -83,6 +91,7 @@ export function RichContent({ document, fallback = "" }: { document?: RichDocume
     if (block.type === "numberList") return <ol key={block.id}>{block.items.filter(Boolean).map((item, index) => <li key={`${block.id}-${index}`}>{item}</li>)}</ol>;
     if (block.type === "table") return <div className="rich-table-wrap" key={block.id}><table><tbody>{block.rows.map((row, rowIndex) => <tr key={`${block.id}-${rowIndex}`}>{row.map((cell, cellIndex) => rowIndex === 0 ? <th key={`${block.id}-${rowIndex}-${cellIndex}`}>{cell}</th> : <td key={`${block.id}-${rowIndex}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
     if (block.type === "image") return <figure key={block.id}><img src={block.url} alt={block.alt}/>{block.caption && <figcaption>{block.caption}</figcaption>}</figure>;
+    if (block.type === "formula") return <div className="rich-formula" key={block.id} role="math" aria-label={block.expression}>{block.expression}</div>;
     return null;
   })}</div>;
 }

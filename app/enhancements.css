@@ -432,19 +432,17 @@
 @media(max-width:700px){.public-testimonials-clean{padding:12px 0 10px}.public-testimonials-clean>div>header{margin-bottom:10px}.public-testimonials-clean h2{margin-top:5px;font-size:24px}.testimonial-clean-open{min-height:158px;gap:7px;padding:13px 15px}.testimonial-clean-mark{font-size:30px;line-height:.75}.testimonial-clean-open blockquote{font-size:13px;line-height:1.4}.testimonial-clean-person{gap:9px}.testimonial-clean-person .testimonial-portrait{width:36px;height:36px}.testimonial-clean-controls{margin-top:8px}}
 .feedback-message-icon svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* Personalized greetings with a clear, welcoming editorial hierarchy. */
-.home-greeting{position:relative;overflow:hidden;border-bottom:1px solid rgba(36,83,161,.1);background:linear-gradient(112deg,#fbfdff 0%,#f2f7ff 58%,#faf7ff 100%)}
-.home-greeting::after{content:"";position:absolute;right:-70px;top:-115px;width:290px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(66,117,214,.09),transparent 68%);pointer-events:none}
-.home-greeting-inner{position:relative;z-index:1;min-height:92px;display:grid;align-content:center;justify-items:start;gap:5px;padding-block:18px;text-align:left}
-.home-greeting-inner>span{color:#1762d1;font-size:13px;font-weight:650;line-height:1.2;letter-spacing:-.01em}
-.home-greeting-inner h2{max-width:900px;margin:0;color:#121722;font-size:clamp(25px,2.15vw,34px);font-weight:650;line-height:1.08;letter-spacing:-.04em;text-wrap:balance}
+/* Signed-in students see the rotating greeting inside the hero, without a second banner. */
+.hero-copy h1.hero-greeting-title{max-width:610px;min-height:2.16em;margin:27px 0 26px;color:#151923;font-size:clamp(36px,3.45vw,48px);font-weight:650;font-style:normal;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}
+.hero-greeting-pending{display:flex;align-items:center}.hero-greeting-pending>span{display:block;width:min(460px,88%);height:.82em;border-radius:10px;background:linear-gradient(100deg,rgba(28,38,54,.07) 28%,rgba(255,255,255,.65) 46%,rgba(28,38,54,.07) 64%);background-size:230% 100%;animation:subject-shimmer 1.25s ease-in-out infinite}
 .admin-workspace>header h1{max-width:min(820px,74vw);line-height:1.08}
 .admin-workspace>header h1 .admin-greeting-copy{display:grid;gap:4px;color:inherit;font:inherit;letter-spacing:normal;text-transform:none}
 .admin-workspace>header h1 .admin-greeting-copy>small{display:block;color:#1762d1;font-size:13px;font-weight:650;line-height:1.2;letter-spacing:-.01em;text-transform:none}
 .admin-workspace>header h1 .admin-greeting-copy>strong{display:block;color:#111722;font-size:clamp(27px,2.45vw,38px);font-weight:650;line-height:1.08;letter-spacing:-.04em;text-transform:none;text-wrap:balance}
 .admin-stat-grid.actionable{margin-top:30px}
-@media(max-width:900px){.home-greeting-inner{min-height:84px;padding-block:16px}.admin-workspace>header h1{max-width:min(620px,78vw)}.admin-stat-grid.actionable{margin-top:25px}}
-@media(max-width:650px){.home-greeting::after{right:-115px;top:-130px}.home-greeting-inner{min-height:76px;gap:4px;padding-block:14px}.home-greeting-inner>span{font-size:11px}.home-greeting-inner h2{max-width:94%;font-size:22px;line-height:1.12;letter-spacing:-.035em}.admin-workspace>header h1{max-width:min(100%,430px)}.admin-workspace>header h1 .admin-greeting-copy{gap:3px}.admin-workspace>header h1 .admin-greeting-copy>small{font-size:11px}.admin-workspace>header h1 .admin-greeting-copy>strong{font-size:26px;line-height:1.1}.admin-stat-grid.actionable{margin-top:22px}}
+@media(max-width:900px){.hero-copy h1.hero-greeting-title{max-width:650px;min-height:2.2em;font-size:clamp(35px,5.2vw,43px)}.admin-workspace>header h1{max-width:min(620px,78vw)}.admin-stat-grid.actionable{margin-top:25px}}
+@media(max-width:650px){.hero-copy h1.hero-greeting-title{max-width:96%;min-height:2.3em;margin:22px 0;font-size:clamp(29px,8.4vw,35px);line-height:1.1;letter-spacing:-.03em}.admin-workspace>header h1{max-width:min(100%,430px)}.admin-workspace>header h1 .admin-greeting-copy{gap:3px}.admin-workspace>header h1 .admin-greeting-copy>small{font-size:11px}.admin-workspace>header h1 .admin-greeting-copy>strong{font-size:26px;line-height:1.1}.admin-stat-grid.actionable{margin-top:22px}}
+@media(prefers-reduced-motion:reduce){.hero-greeting-pending>span{animation:none}}
 
 /* Balanced About page composition across desktop, tablet and mobile. */
 .app-shell>main:has(.about-page)>.page-intro{padding:22px 0 20px}
@@ -573,4 +571,5 @@
   .flashcard-controls{grid-template-columns:1fr auto 1fr;gap:7px}.flashcard-controls button{font-size:9px}.flashcard-controls>span{font-size:8px}
 }
 @media(max-width:370px){.flashcard-face{padding-inline:15px}.flashcard-stage{padding-inline:13px}.flashcard-face-label small,.study-flashcard-label small{display:none}.study-flashcard-stage{padding-inline:7px}}
+.rich-formula-editor{font-family:var(--font-mono);font-weight:700}.rich-formula{max-width:100%;padding:12px 14px;overflow-x:auto;border:1px solid #d9e5f5;border-radius:10px;background:#f4f8ff;color:#123f79;font-family:Cambria,"Times New Roman",serif;font-size:1.02em;font-weight:700;line-height:1.55;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){.flashcard-flip-card,.study-flashcard{transition:none}}

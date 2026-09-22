@@ -27,13 +27,13 @@ function getSalutation(timeBlock: number | null, message: string | null) {
   return normalizedMessage.startsWith(normalizedSalutation) ? "Welcome back," : salutation;
 }
 
-function useGreeting(audience: Audience) {
+function useGreeting(audience: Audience, initialGreeting: GreetingState | null = null) {
   const { user, loading } = useAuth();
-  const [greeting, setGreeting] = useState<GreetingState | null>(null);
+  const [greeting, setGreeting] = useState<GreetingState | null>(initialGreeting);
   const [eventId] = useState(() => typeof crypto === "undefined" ? "" : crypto.randomUUID());
 
   useEffect(() => {
-    if (loading || !user || !eventId) return;
+    if (loading || !user || !eventId || greeting?.userId === user.id) return;
 
     const controller = new AbortController();
     void fetch("/api/greetings", {
@@ -60,23 +60,54 @@ function useGreeting(audience: Audience) {
     });
 
     return () => controller.abort();
-  }, [audience, eventId, loading, user]);
+  }, [audience, eventId, greeting?.userId, loading, user]);
 
   const message = user && greeting?.userId === user.id ? greeting.message : null;
   const timeBlock = user && greeting?.userId === user.id ? greeting.timeBlock : null;
-  return { message, timeBlock, visible: !loading && Boolean(user) };
+  return { message, timeBlock, user, loading, visible: !loading && Boolean(user) };
 }
 
-export function HomeGreeting() {
-  const { message, timeBlock, visible } = useGreeting("student");
-  if (!visible || !message) return null;
+function firstName(name: string | null | undefined) {
+  const value = name?.trim();
+  if (!value) return "Cue learner";
+  const givenName = value.split(/\s+/u)[0];
+  return givenName.charAt(0).toUpperCase() + givenName.slice(1);
+}
 
-  return <section className="home-greeting" aria-label="Your Cue greeting">
-    <div className="container home-greeting-inner">
-      <span>{getSalutation(timeBlock, message)}</span>
-      <h2>{message}</h2>
-    </div>
-  </section>;
+export function HomeHeroHeading({
+  initialUserId,
+  initialName,
+  initialMessage,
+  initialTimeBlock,
+}: {
+  initialUserId?: string | null;
+  initialName?: string | null;
+  initialMessage?: string | null;
+  initialTimeBlock?: number | null;
+}) {
+  const initialGreeting = initialUserId && initialMessage
+    ? { userId: initialUserId, message: initialMessage, timeBlock: initialTimeBlock ?? 7 }
+    : null;
+  const { message, user, loading } = useGreeting("student", initialGreeting);
+  const signedInName = loading
+    ? initialName
+    : user
+      ? firstName(user.profile?.name || user.email.split("@")[0])
+      : null;
+
+  if (!signedInName && !loading) {
+    return <h1>Your complete<br /><em>BMS study space.</em></h1>;
+  }
+
+  if (!signedInName) {
+    return <h1>Your complete<br /><em>BMS study space.</em></h1>;
+  }
+
+  if (!message) {
+    return <h1 className="hero-greeting-title hero-greeting-pending" aria-label={`Loading a greeting for ${firstName(signedInName)}`}><span /></h1>;
+  }
+
+  return <h1 className="hero-greeting-title" aria-live="polite">{message}</h1>;
 }
 
 export function AdminGreeting({ fallback }: { fallback: string }) {

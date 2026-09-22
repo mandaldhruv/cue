@@ -19,4 +19,6 @@ Key patterns:
 - Database inserts take an array: `insert([{ ... }])`.
 - Reference users with `auth.users(id)`; use `auth.uid()` in RLS policies.
 - For storage uploads, persist both the returned `url` and `key`.
+- Student Home greetings are reserved server-side through `reserve_cue_greeting` and rendered directly in the hero. Preserve that initial greeting during hydration; do not add a client fallback that swaps visible text after load.
+- Flashcard `question_document` and `answer_document` use structured rich-content blocks. Preserve source lists, tables and formulas as their dedicated block types rather than flattening them into plain text.
 <!-- INSFORGE:END -->

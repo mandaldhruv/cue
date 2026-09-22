@@ -65,7 +65,7 @@ The main admin dashboard heading also uses Cue's private Admin greeting collecti
 
 ## Flashcards: A Core Cue Feature
 
-Cue flashcards are designed around the same study material available inside Cue. Decks follow a clear **Subject → Unit → Topic → Card** hierarchy, and questions or answers can contain structured text, lists, tables and images.
+Cue flashcards are designed around the same study material available inside Cue. Decks follow a clear **Subject → Unit → Topic → Card** hierarchy, and questions or answers can contain structured text, bullet or numbered lists, tables, formulas and images.
 
 This makes revision more focused:
 
@@ -95,15 +95,22 @@ After a successful Google, email/password or email-verification flow, the studen
 
 ## Personalized Greetings
 
-Authenticated students see one compact personalized greeting directly below the navigation on the Home page only. The Admin sees the corresponding Admin greeting in the dashboard heading.
+Authenticated students see one compact personalized greeting in the Home-page hero only, replacing the guest hero heading. The Admin sees the corresponding Admin greeting in the dashboard heading.
 
 - The current message pool is selected using `Asia/Kolkata` time and eight exact three-hour blocks.
 - Each authenticated account has an independent sequence for every time block.
 - Sequences persist across browsers, devices and days, and roll from message 100 back to message 1.
-- A database transaction reserves each message atomically, while a unique display-event ID makes client retries and React Strict Mode safe.
+- A database transaction reserves each message atomically. The Home page reserves its message during server rendering, so a refresh shows the final new greeting immediately without a temporary fallback or a post-load text swap.
+- Client hydration keeps the server-reserved greeting instead of reserving a second message. The Admin dashboard continues to use its own client reservation flow.
 - Unauthenticated visitors do not receive a personalized greeting.
 
 The 1,600 supplied messages are bundled in `app/greetings/greeting-messages.generated.json`. Maintainers can regenerate that file from the approved Markdown source with `scripts/import-greetings.mjs`; the importer validates all 16 collections and their original order.
+
+### Structured Flashcard Content
+
+The flashcard editor supports text, bullet lists, numbered lists, tables, formulas and images. Use the appropriate block for the source material; do not flatten lists, tables or formulas into a plain paragraph. Formula blocks preserve readable mathematical symbols such as `÷`, `×`, `√` and `=` in the student view.
+
+The one-time importer at `scripts/import-requested-flashcard-banks.mjs` is a guarded migration tool for the supplied AMD, EDM and Principles of Economics II banks. It validates source structure and performs a read-back verification after inserting units, topics and cards. Run it without `--apply` first; `--apply` writes to production and stops rather than creating duplicate units.
 
 ---
 

@@ -73,7 +73,7 @@ The public navigation includes:
 
 The home page introduces Cue as a study platform built for BMS students. It directs students toward the subject area rather than making them read long marketing copy.
 
-After authentication, the Home page alone shows a compact personalized greeting immediately below the navigation. The greeting uses the learner's verified profile name and must not appear on Subjects, Flashcards, PYQs, Feedback, About or legal pages. Unauthenticated visitors do not see it.
+After authentication, the Home page alone replaces the guest hero heading with a compact personalized greeting. The greeting uses the learner's verified profile name and must not appear on Subjects, Flashcards, PYQs, Feedback, About or legal pages. Unauthenticated visitors continue to see the normal Cue hero heading.
 
 ### Subjects page
 
@@ -100,7 +100,7 @@ The PYQ area helps students find actual exam papers by subject and year. A stude
 
 ### Flashcards
 
-Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**. Each card has a question or prompt followed by a detailed answer. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
+Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**. Each card has a question or prompt followed by a detailed answer. Answers support text, bullet or numbered lists, tables, formulas and images so academic material retains its original structure. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
 
 Students can browse flashcard questions freely. Revealing an answer requires a Cue student account.
 
@@ -116,7 +116,7 @@ After successful sign-in, Google OAuth or email verification, Cue restores the o
 
 Cue maintains separate Admin and Student greeting collections. Each collection contains 100 messages for each of eight three-hour IST (`Asia/Kolkata`) blocks. Messages advance sequentially, never randomly.
 
-The authoritative position is stored per authenticated user, audience and time block in InsForge. It continues across devices, browsers and days, and rolls from 100 to 1. A single display-event identifier is idempotent so hydration, retries or React Strict Mode cannot consume two messages for one page entry. Concurrent devices reserve different messages atomically. The Admin greeting enhances the main dashboard heading; Student greetings remain restricted to the public Home page. An authorised Admin can use both surfaces, but the two audience counters and message collections remain independent.
+The authoritative position is stored per authenticated user, audience and time block in InsForge. It continues across devices, browsers and days, and rolls from 100 to 1. The Home page reserves the final student greeting during server rendering, so the first visible frame after a refresh is already the new greeting; hydration must preserve it rather than consume another message. Concurrent devices reserve different messages atomically. The Admin greeting enhances the main dashboard heading; Student greetings remain restricted to the public Home page. An authorised Admin can use both surfaces, but the two audience counters and message collections remain independent.
 
 ### Feedback page
 
@@ -142,7 +142,7 @@ The dashboard is divided into practical sections:
 | **Semesters** | Create and manage semesters, set their order and control whether they are published, draft or coming soon. |
 | **Subjects** | Add, edit, reorder, publish or unpublish subjects within a semester. |
 | **Study Content** | Choose a semester and subject, then manage syllabus units, notes, exam-focus topics and recommended resources. |
-| **Flashcards** | Organise decks by unit and topic; create rich question-and-answer cards; reorder topics/cards; and control whether each item is live or draft. |
+| **Flashcards** | Organise decks by unit and topic; create rich question-and-answer cards with lists, tables, formulas and images; reorder topics/cards; and control whether each item is live or draft. |
 | **PYQs & PDFs** | Upload PDF papers, attach a title, year, exam type and description, then publish, replace or remove them. |
 | **Feedback & Testimonials** | Review student feedback, set its review status, add private notes and manage public educator testimonials. |
 
