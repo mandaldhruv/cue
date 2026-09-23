@@ -4,7 +4,7 @@ export default function AboutPage() {
   return <>
     <Navigation />
     <main>
-      <PageIntro eyebrow="ABOUT CUE" title="A calmer way to prepare." description="Cue exists because finding study material should never take longer than studying it." />
+      <PageIntro className="about-intro" eyebrow="ABOUT CUE" title="A calmer way to prepare." description="Cue exists because finding study material should never take longer than studying it." />
       <section className="page-section about-page">
         <div className="container about-content">
           <div className="mission-card">

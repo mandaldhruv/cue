@@ -194,3 +194,15 @@ test("subject workspace redirects flashcards tab directly to main flashcard deck
   // Direct tab navigation query redirects to /flashcards/[slug]
   assert.match(subjectPage, /redirect\(`\/flashcards\/\$\{slug\}`\)/);
 });
+
+test("About page applies cohesive, premium green theme", async () => {
+  const [aboutPage, enhancements] = await Promise.all([
+    source("app/about/page.tsx"),
+    source("app/enhancements.css"),
+  ]);
+
+  assert.match(aboutPage, /className="about-intro"/);
+  assert.match(enhancements, /\.about-intro\s*\{[\s\S]*background:\s*linear-gradient\(145deg,\s*#f7fbf9,\s*#edf5f1\)/);
+  assert.match(enhancements, /\.about-intro \.eyebrow\s*\{[\s\S]*color:\s*#1e594d/);
+  assert.match(enhancements, /\.about-page \.mission-card h2 em\s*\{[\s\S]*color:\s*#1e594d/);
+});
