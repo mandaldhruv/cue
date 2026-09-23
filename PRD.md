@@ -42,8 +42,7 @@ Cue solves this by giving students one organised place for their subjects and gi
 Students use Cue to:
 
 - choose their semester and subject;
-- read syllabus units and important topics;
-- access notes and recommended learning resources;
+- read syllabus units and module coverage;
 - preview previous-year question papers and download them after signing in;
 - revise with flashcards and reveal solutions after signing in; and
 - share private feedback or feature suggestions.
@@ -83,12 +82,9 @@ For an available semester, students see the published subjects. If a semester ha
 
 ### Subject workspace
 
-When a student opens a subject, they see only material that has been published by the admin. The subject workspace can include:
+When a student opens a subject, they see only material that has been published by the admin. The subject workspace includes three focused study features:
 
 - **Syllabus:** units and detailed topic coverage.
-- **Important topics / Exam focus:** high-priority topics for revision.
-- **Notes:** explanations, revision notes and useful links.
-- **Recommended resources:** books, videos or external learning links.
 - **PYQs:** previous-year papers, grouped by academic year.
 - **Flashcards:** question-and-answer revision cards for that subject.
 
@@ -141,7 +137,7 @@ The dashboard is divided into practical sections:
 | **Dashboard** | See a quick summary of live subjects, published material, available semesters, new feedback and content needing attention. |
 | **Semesters** | Create and manage semesters, set their order and control whether they are published, draft or coming soon. |
 | **Subjects** | Add, edit, reorder, publish or unpublish subjects within a semester. |
-| **Study Content** | Choose a semester and subject, then manage syllabus units, notes, exam-focus topics and recommended resources. |
+| **Syllabus** | Choose a semester and subject, then manage syllabus units and detailed topic coverage. |
 | **Flashcards** | Organise decks by unit and topic; create rich question-and-answer cards with lists, tables, formulas and images; reorder topics/cards; and control whether each item is live or draft. |
 | **PYQs & PDFs** | Upload PDF papers, attach a title, year, exam type and description, then publish, replace or remove them. |
 | **Feedback & Testimonials** | Review student feedback, set its review status, add private notes and manage public educator testimonials. |
@@ -179,7 +175,7 @@ Only published testimonials appear on the public website.
 2. Select **BMS Subjects** or **Subjects**.
 3. Choose a semester.
 4. Select a subject.
-5. Open the required section: syllabus, notes, important topics, resources, PYQs or flashcards.
+5. Open the required study feature: syllabus, PYQs or flashcards.
 6. Study or preview a paper without signing in.
 7. Sign in only when downloading a paper or revealing a flashcard solution.
 
@@ -191,14 +187,13 @@ Only published testimonials appear on the public website.
 4. Write the feedback or suggestion.
 5. Submit it privately.
 
-### Admin: publish new subject content
+### Admin: publish syllabus units
 
 1. Sign in to the private admin dashboard.
-2. Open **Study Content**.
+2. Open **Syllabus**.
 3. Select a semester, then select a subject.
-4. Choose the content type: syllabus, notes, exam focus or resources.
-5. Add the content, choose its order and save it as draft or published.
-6. Preview the student-facing subject page when needed.
+4. Add or edit a syllabus unit, choose its order and save it as draft or published.
+5. Preview the student-facing subject page when needed.
 
 ### Admin: upload a previous-year paper
 
@@ -221,12 +216,9 @@ Only published testimonials appear on the public website.
 
 ## 9. Content requirements
 
-For every subject, the admin should aim to prepare:
+For every subject, the admin should prepare the 3 core study features:
 
-- syllabus units;
-- important/exam-focus topics;
-- notes;
-- recommended resources;
+- syllabus units and detailed coverage;
 - previous-year question papers, where available; and
 - flashcards for quick revision.
 

@@ -16,7 +16,7 @@ export default async function Home() {
   const client = await createInsForgeServerClient();
   const [{ data: subjectRows }, { data: contentRows }, { data: semesterRows }, { data: currentUserData }] = await Promise.all([
     client.database.from("subjects").select("name,slug,short_code,description,accent_color").eq("course_code", "BMS").eq("is_published", true).order("semester_number", { ascending: true }).order("sort_order", { ascending: true }),
-    client.database.from("content_items").select("id,subject_id,content_type,title,description,body,is_published").eq("is_published", true),
+    client.database.from("content_items").select("id,subject_id,content_type,title,description,body,is_published").in("content_type", ["syllabus_unit", "pyq", "flashcard"]).eq("is_published", true),
     client.database.from("semesters").select("id,status").eq("course_code", "BMS").eq("status", "published"),
     client.auth.getCurrentUser(),
   ]);
@@ -45,8 +45,7 @@ export default async function Home() {
       initialGreetingTimeBlock = blockIndex + 1;
     }
   }
-  const subjects: Subject[] = (subjectRows ?? []).map((item: { name: string; slug: string; short_code: string; description: string; accent_color: string }) => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accents[item.accent_color.toUpperCase()] ?? "blue", units: [], notes: 0, papers: 0 }));
-  const topics = (contentRows ?? []).filter((item: { content_type: string }) => item.content_type === "important_topic").slice(0, 4) as { id: string; title: string; description: string; body: string }[];
+  const subjects: Subject[] = (subjectRows ?? []).map((item: { name: string; slug: string; short_code: string; description: string; accent_color: string }) => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accents[item.accent_color.toUpperCase()] ?? "blue", units: [], papers: 0 }));
   return <>
     <Navigation />
     <main>
@@ -61,13 +60,13 @@ export default async function Home() {
               initialMessage={initialGreeting}
               initialTimeBlock={initialGreetingTimeBlock}
             />
-            <p>Semester-wise notes, PYQs, flashcards and exam insights, created around what BMS students actually need.</p>
+            <p>Semester-wise syllabus, PYQs and flashcards, created around what BMS students actually need.</p>
             <CountUpStats subjects={subjects.length} resources={contentRows?.length ?? 0} semesters={semesterRows?.length ?? 0}/>
           </div>
           <div className="hero-study-panel">
             <div className="hero-panel-head"><span>START STUDYING</span><small>BMS · SEMESTER 3</small></div>
             <div className="hero-study-tabs">
-              <Link href="/subjects"><i>01</i><div><b>Choose a subject</b><small>Open syllabus, notes and important topics</small></div><span>→</span></Link>
+              <Link href="/subjects"><i>01</i><div><b>Choose a subject</b><small>Open syllabus coverage and module breakdowns</small></div><span>→</span></Link>
               <Link href="/pyqs"><i>02</i><div><b>Practice PYQs</b><small>Browse real papers by subject and year</small></div><span>→</span></Link>
               <Link className="primary-study-action" href="/flashcards"><i>03</i><div><b>Flashcards</b><small>Revise key concepts with active recall</small></div><span>→</span></Link>
             </div>
@@ -82,9 +81,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="home-section flashcards-spotlight"><div className="container"><div className="flashcards-spotlight-copy"><span className="eyebrow">CORE CUE FEATURE</span><h2>Study the notes.<br/><em>Recall the ideas.</em></h2><p>Cue flashcards are built around the same study material you find here, so revision stays connected to what you are learning.</p><Link className="primary-button" href="/flashcards">Open Flashcards <span>→</span></Link></div><div className="flashcards-spotlight-card retention-card" aria-label="Active recall benefit"><span>ACTIVE RECALL</span><strong>2× better retention</strong><p>Retrieving information strengthens long-term memory.</p></div></div></section>
-
-      {topics.length > 0 && <section className="home-section focus-section"><div className="container focus-grid"><div className="focus-copy"><span className="eyebrow">PUBLISHED EXAM FOCUS</span><h2>Know what deserves<br/><em>your attention.</em></h2><p>These topics come directly from material reviewed and published by the Cue team. No invented scores or placeholder predictions.</p><Link className="primary-button" href="/subjects">Open your subject <span>→</span></Link></div><div className="focus-board real-focus-board"><div className="focus-header"><div><span>✦</span><b>Important topics</b></div><small>Live from Cue</small></div>{topics.map((item, index) => <article key={item.id}><b>{String(index + 1).padStart(2, "0")}</b><div><span>{item.title}</span>{(item.description || item.body) && <small>{item.description || item.body}</small>}</div></article>)}</div></div></section>}
+      <section className="home-section flashcards-spotlight"><div className="container"><div className="flashcards-spotlight-copy"><span className="eyebrow">CORE CUE FEATURE</span><h2>Master the syllabus.<br/><em>Recall the ideas.</em></h2><p>Cue flashcards turn your syllabus into quick, focused revision, helping you recall key ideas faster.</p><Link className="primary-button" href="/flashcards">Open Flashcards <span>→</span></Link></div><div className="flashcards-spotlight-card retention-card" aria-label="Active recall benefit"><span>ACTIVE RECALL</span><strong>2× better retention</strong><p>Retrieving information strengthens long-term memory.</p></div></div></section>
 
     </main>
     <Footer />

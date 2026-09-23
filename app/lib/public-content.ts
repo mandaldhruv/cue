@@ -6,7 +6,7 @@ export type PublicSubjectRecord = {
 };
 
 export type PublicContentRecord = {
-  id: string; subject_id: string; content_type: "syllabus_unit" | "note" | "flashcard" | "pyq" | "important_topic" | "recommended_resource";
+  id: string; subject_id: string; content_type: "syllabus_unit" | "flashcard" | "pyq";
   title: string; description: string; body: string; academic_year: number | null;
   file_url: string | null; file_key: string | null; sort_order: number;
   flashcard_unit_id?: string | null; flashcard_topic_id?: string | null;
@@ -40,7 +40,11 @@ export async function getPublishedContent(subjectId?: string, contentType?: Publ
     .select("id,subject_id,content_type,title,description,body,academic_year,file_url,file_key,sort_order")
     .eq("is_published", true).order("sort_order", { ascending: true });
   if (subjectId) query = query.eq("subject_id", subjectId);
-  if (contentType) query = query.eq("content_type", contentType);
+  if (contentType) {
+    query = query.eq("content_type", contentType);
+  } else {
+    query = query.in("content_type", ["syllabus_unit", "pyq", "flashcard"]);
+  }
   const { data, error } = await query;
   return { content: error ? [] : (data ?? []) as PublicContentRecord[], error };
 }

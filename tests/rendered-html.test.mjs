@@ -136,3 +136,61 @@ test("keeps feedback private while publishing only approved testimonials", async
   assert.match(migration, /published testimonials are publicly readable/);
   assert.match(migration, /NOT is_published OR consent_confirmed/);
 });
+
+test("enforces exactly 3 study features (Syllabus, PYQs, Flashcards) for students and admin", async () => {
+  const [adminShell, adminPage, syllabusPage, syllabusManager, subjectWorkspace, publicContent, home] = await Promise.all([
+    source("app/admin/AdminShell.tsx"),
+    source("app/admin/page.tsx"),
+    source("app/admin/syllabus/page.tsx"),
+    source("app/admin/syllabus/SyllabusManager.tsx"),
+    source("app/subjects/[slug]/SubjectWorkspace.tsx"),
+    source("app/lib/public-content.ts"),
+    source("app/page.tsx"),
+  ]);
+
+  // Admin sidebar matches exact required items and labels
+  assert.match(adminShell, /\["\/admin\/syllabus",\s*"SY",\s*"Syllabus"\]/);
+  assert.doesNotMatch(adminShell, /Study Content/);
+
+  // Admin Syllabus management page exists and manages syllabus units
+  assert.match(syllabusPage, /SyllabusManager/);
+  assert.match(syllabusManager, /Syllabus Units/);
+  assert.match(syllabusManager, /syllabus_unit/);
+  assert.doesNotMatch(syllabusManager, /Notes|Exam Focus|recommended_resource/);
+
+  // Admin Dashboard references Syllabus
+  assert.match(adminPage, /\["01",\s*"Syllabus"/);
+  assert.doesNotMatch(adminPage, /Study content/);
+
+  // Student Workspace has strictly Syllabus, PYQs, Flashcards
+  assert.match(subjectWorkspace, /label:\s*"Syllabus"/);
+  assert.match(subjectWorkspace, /label:\s*"PYQs"/);
+  assert.match(subjectWorkspace, /label:\s*"Flashcards"/);
+  assert.match(subjectWorkspace, /href=\{`\/flashcards\/\$\{subject\.slug\}`\}/);
+  assert.doesNotMatch(subjectWorkspace, /FlashcardPlayer/);
+  assert.doesNotMatch(subjectWorkspace, /"note"|"recommended_resource"|exam-focus/);
+
+  // Public content type excludes obsolete types
+  assert.match(publicContent, /content_type: "syllabus_unit" \| "flashcard" \| "pyq"/);
+  assert.doesNotMatch(publicContent, /"note"|"important_topic"|"recommended_resource"/);
+
+  // Home page does not render obsolete exam-focus section
+  assert.doesNotMatch(home, /focus-section|important_topic/);
+});
+
+test("subject workspace redirects flashcards tab directly to main flashcard deck", async () => {
+  const [subjectWorkspace, subjectPage] = await Promise.all([
+    source("app/subjects/[slug]/SubjectWorkspace.tsx"),
+    source("app/subjects/[slug]/page.tsx"),
+  ]);
+
+  // Flashcards option is preserved as a link to the main flashcard section
+  assert.match(subjectWorkspace, /href=\{`\/flashcards\/\$\{subject\.slug\}`\}/);
+  assert.match(subjectWorkspace, /label:\s*"Flashcards"/);
+
+  // Subject page no longer embeds old FlashcardPlayer
+  assert.doesNotMatch(subjectWorkspace, /FlashcardPlayer/);
+
+  // Direct tab navigation query redirects to /flashcards/[slug]
+  assert.match(subjectPage, /redirect\(`\/flashcards\/\$\{slug\}`\)/);
+});

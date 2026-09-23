@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Footer, Navigation } from "../../components";
 import { getPublishedContent, getPublishedSubject } from "../../lib/public-content";
 import SubjectWorkspace from "./SubjectWorkspace";
@@ -13,8 +13,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: `${subject.name} · Cue`, description: subject.description || `Study material for ${subject.name}, BMS Semester ${subject.semester_number}.` };
 }
 
-export default async function SubjectPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function SubjectPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const { slug } = await params;
+  const search = await searchParams;
+  if (search?.tab === "flashcard" || search?.tab === "flashcards") {
+    redirect(`/flashcards/${slug}`);
+  }
   const { subject } = await getPublishedSubject(slug);
   if (!subject) notFound();
   const { content, error } = await getPublishedContent(subject.id);

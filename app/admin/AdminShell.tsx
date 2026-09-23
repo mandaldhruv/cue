@@ -5,7 +5,7 @@ import { adminSignOut } from "./actions";
 const groups = [
   { label: "WORKSPACE", items: [["/admin", "DB", "Dashboard"]] },
   { label: "ACADEMIC", items: [["/admin/semesters", "SE", "Semesters"], ["/admin/subjects", "SU", "Subjects"]] },
-  { label: "CONTENT", items: [["/admin/content", "CO", "Study Content"], ["/admin/flashcards", "FC", "Flashcards"], ["/admin/pyqs", "PQ", "PYQs & PDFs"]] },
+  { label: "CONTENT", items: [["/admin/syllabus", "SY", "Syllabus"], ["/admin/flashcards", "FC", "Flashcards"], ["/admin/pyqs", "PQ", "PYQs & PDFs"]] },
   { label: "COMMUNITY", items: [["/admin/feedback", "VO", "Feedback & Testimonials"]] },
 ];
 

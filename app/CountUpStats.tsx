@@ -25,7 +25,7 @@ function CountValue({ value, pad, active }: { value: number; pad: number; active
 export default function CountUpStats({ subjects, resources, semesters }: { subjects: number; resources: number; semesters: number }) {
   const stats = [
     { value: subjects, label: "BMS subjects", pad: 2 },
-    { value: resources, label: "Published resources", pad: 0 },
+    { value: resources, label: "Study materials", pad: 0 },
     { value: semesters, label: semesters === 1 ? "Available semester" : "Available semesters", pad: 0 },
   ];
   const sectionRef = useRef<HTMLDivElement>(null);

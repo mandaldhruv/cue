@@ -161,7 +161,7 @@ export async function deleteSubject(id: string): Promise<AdminActionResult> {
   const { data: subject } = await session.client.database.from("subjects").select("name").eq("id", id).limit(1);
   const { data: content, error: countError } = await session.client.database.from("content_items").select("id").eq("subject_id", id).limit(1);
   if (countError) return fail(countError.message ?? "Could not check subject content.");
-  if (content?.length) return fail("Remove this subject’s study content first. Nothing was deleted.");
+  if (content?.length) return fail("Remove this subject’s syllabus and study material first. Nothing was deleted.");
   const { error } = await session.client.database.from("subjects").delete().eq("id", id);
   if (error) return fail(error.message ?? "Could not delete the subject.");
   await logAction(session.client, "delete", "subject", id, subject?.[0]?.name ?? "Deleted empty subject");
@@ -169,7 +169,7 @@ export async function deleteSubject(id: string): Promise<AdminActionResult> {
   return { ok: true, message: "Subject deleted." };
 }
 
-const editableContentTypes = ["syllabus_unit", "note", "important_topic", "recommended_resource", "flashcard"];
+const editableContentTypes = ["syllabus_unit", "flashcard"];
 
 export async function saveContentItem(formData: FormData): Promise<AdminActionResult> {
   const session = await context();
@@ -199,9 +199,10 @@ export async function saveContentItem(formData: FormData): Promise<AdminActionRe
   const entityId = id || data?.[0]?.id || null;
   await logAction(session.client, id ? "update" : "create", "content_item", entityId, `${contentType}: ${title}`);
   refreshContent();
+  revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
-  return { ok: true, message: id ? "Content updated." : "Content created." };
+  return { ok: true, message: id ? (contentType === "flashcard" ? "Flashcard updated." : "Syllabus unit updated.") : (contentType === "flashcard" ? "Flashcard created." : "Syllabus unit created.") };
 }
 
 export async function setContentPublished(id: string, isPublished: boolean): Promise<AdminActionResult> {
@@ -221,11 +222,12 @@ export async function setContentPublished(id: string, isPublished: boolean): Pro
   }
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id);
   if (error) return fail(error.message ?? "Could not change content visibility.");
-  await logAction(session.client, "visibility", "content_item", id, `${item?.title ?? "Study content"} · ${isPublished ? "published" : "moved to draft"}`);
+  await logAction(session.client, "visibility", "content_item", id, `${item?.title ?? (item?.content_type === "flashcard" ? "Flashcard" : "Syllabus")} · ${isPublished ? "published" : "moved to draft"}`);
   refreshContent();
+  revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
-  return { ok: true, message: isPublished ? "Content published." : "Content moved to draft." };
+  return { ok: true, message: isPublished ? (item?.content_type === "flashcard" ? "Flashcard published." : "Syllabus unit published.") : (item?.content_type === "flashcard" ? "Flashcard moved to draft." : "Syllabus unit moved to draft.") };
 }
 
 export async function moveContentItem(id: string, subjectId: string, contentType: EditableContentType, direction: "up" | "down"): Promise<AdminActionResult> {
@@ -242,9 +244,10 @@ export async function moveContentItem(id: string, subjectId: string, contentType
   if (first.error || second.error) return fail(first.error?.message ?? second.error?.message ?? "Could not reorder content.");
   await logAction(session.client, "reorder", "content_item", id, `Moved ${direction}`);
   refreshContent();
+  revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
-  return { ok: true, message: "Content order updated." };
+  return { ok: true, message: "Order updated." };
 }
 
 export async function deleteContentItem(id: string): Promise<AdminActionResult> {
@@ -252,13 +255,14 @@ export async function deleteContentItem(id: string): Promise<AdminActionResult> 
   if (!session) return fail("Your admin session has expired.");
   const { data: item } = await session.client.database.from("content_items").select("title,content_type").eq("id", id).limit(1);
   const { data: deleted, error } = await session.client.database.from("content_items").delete().eq("id", id).select("id");
-  if (error) return fail(error.message ?? "Could not delete this content item.");
-  if (!deleted?.length) return fail("This content item was not found or could not be deleted. Refresh the page and try again.");
+  if (error) return fail(error.message ?? "Could not delete this item.");
+  if (!deleted?.length) return fail("This item was not found or could not be deleted. Refresh the page and try again.");
   await logAction(session.client, "delete", "content_item", id, `${item?.[0]?.content_type ?? "content"}: ${item?.[0]?.title ?? "Deleted item"}`);
   refreshContent();
+  revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
   revalidatePath("/admin/flashcards");
-  return { ok: true, message: item?.[0]?.content_type === "flashcard" ? "Flashcard deleted." : "Content item deleted." };
+  return { ok: true, message: item?.[0]?.content_type === "flashcard" ? "Flashcard deleted." : "Syllabus unit deleted." };
 }
 
 export async function saveFlashcardUnit(formData: FormData): Promise<AdminActionResult> {

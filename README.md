@@ -2,7 +2,7 @@
 
 > Study smarter. Stress less.
 
-Cue is a premium study platform designed for BMS students. It brings subject-wise syllabus, notes, important topics, PYQs, flashcards, resources and feedback into one calm, organised study space.
+Cue is a premium study platform designed for BMS students. It brings subject-wise syllabus, PYQs, flashcards and feedback into one calm, organised study space.
 
 Instead of searching through WhatsApp groups, Telegram channels, folders and random links, students can open a subject and start studying.
 
@@ -15,9 +15,6 @@ Study material is often scattered across multiple places, especially before exam
 Cue helps students find the right material quickly by organising it semester-wise and subject-wise in one place.
 
 - Syllabus and units
-- Notes and revision material
-- Important / exam-focus topics
-- Recommended resources
 - Previous-year question papers
 - Flashcards for active recall
 - Private student feedback
@@ -30,8 +27,8 @@ Cue helps students find the right material quickly by organising it semester-wis
 
 - BMS-focused, mobile-first study platform
 - Semester and subject-wise organisation
-- Dedicated subject workspaces
-- Published syllabus, notes, important topics and resources
+- Dedicated subject workspaces (Syllabus, PYQs, Flashcards)
+- Published syllabus units and detailed coverage
 - Previous-year paper library with PDF preview and download
 - Subject-based flashcard decks for active recall
 - Student accounts with Google and email/password sign-in
@@ -53,7 +50,7 @@ Cue includes a private admin workspace for managing all study material without e
 | Dashboard | View live subjects, content status, semesters and feedback summary |
 | Semesters | Create, reorder and publish semesters |
 | Subjects | Add, edit, publish and reorder subjects |
-| Study Content | Manage syllabus, notes, important topics and resources |
+| Syllabus | Manage syllabus units and module coverage |
 | Flashcards | Organise units/topics, create rich cards, reorder topics/cards and control publishing |
 | PYQs & PDFs | Upload, replace, publish and manage question-paper PDFs |
 | Feedback | Review private student feedback and update review status |
@@ -69,7 +66,7 @@ Cue flashcards are designed around the same study material available inside Cue.
 
 This makes revision more focused:
 
-1. Study the notes and resources.
+1. Review the syllabus coverage and unit breakdown.
 2. Open the related flashcards.
 3. Recall important concepts through active revision.
 4. Continue naturally from the last card in one topic to the first card in the next.
@@ -263,7 +260,7 @@ npx -y @insforge/cli link --project-id YOUR_PROJECT_ID
 - Student feedback is private and is never shown publicly.
 - Public testimonials are managed only through the admin dashboard.
 - Educator testimonials should be published only with permission.
-- PDFs, notes and resources should be reviewed before publishing.
+- PDFs and syllabus content should be reviewed before publishing.
 - Cue is currently focused on BMS students, with Semester 3 as the primary content-ready semester.
 
 ---

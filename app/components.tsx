@@ -67,7 +67,3 @@ export function SubjectCard({ subject, index }: { subject: Subject; index: numbe
     </Link>
   );
 }
-
-export function ResourceTile({ icon, title, detail, href = "#" }: { icon: string; title: string; detail: string; href?: string }) {
-  return <Link className="resource-tile" href={href}><span>{icon}</span><div><b>{title}</b><small>{detail}</small></div><i>→</i></Link>;
-}

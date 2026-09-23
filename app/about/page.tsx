@@ -12,7 +12,7 @@ export default function AboutPage() {
               <span>OUR MISSION</span>
               <h2>Turn scattered resources into<br /><em>clear next steps.</em></h2>
             </div>
-            <p>Students should be able to open one subject and immediately know what to learn, what to revise and what to solve next. Cue brings syllabi, notes, papers and quick revision into one thoughtful space.</p>
+            <p>Students should be able to open one subject and immediately know what to learn, what to revise and what to solve next. Cue brings syllabus, papers and flashcards into one thoughtful space.</p>
           </div>
           <div className="about-values" aria-label="Cue principles">
             <article>

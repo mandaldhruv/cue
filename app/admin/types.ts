@@ -26,7 +26,7 @@ export type SubjectRecord = {
 
 export type AdminActionResult = { ok: boolean; message: string };
 
-export type EditableContentType = "syllabus_unit" | "note" | "important_topic" | "recommended_resource" | "flashcard";
+export type EditableContentType = "syllabus_unit" | "flashcard";
 
 export type ContentRecord = {
   id: string;

@@ -9,7 +9,7 @@ export type ExplorerSemester = { semester_number: number; title: string; status:
 export type ExplorerSubject = { name: string; slug: string; short_code: string; description: string; semester_number: number; accent_color: string };
 
 const accentMap: Record<string, Subject["accent"]> = { "#E8665B": "coral", "#315DE6": "blue", "#7459E9": "violet", "#299B7D": "mint", "#D58B2A": "amber", "#CF538F": "rose" };
-const toCard = (item: ExplorerSubject): Subject => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accentMap[item.accent_color.toUpperCase()] ?? "blue", units: [], notes: 0, papers: 0 });
+const toCard = (item: ExplorerSubject): Subject => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accentMap[item.accent_color.toUpperCase()] ?? "blue", units: [], papers: 0 });
 
 export default function SubjectsExplorer({ semesters, subjects, loadError }: { semesters: ExplorerSemester[]; subjects: ExplorerSubject[]; loadError: boolean }) {
   const defaultSemester = semesters.find((item) => item.status === "published")?.semester_number ?? semesters[0]?.semester_number ?? 3;
