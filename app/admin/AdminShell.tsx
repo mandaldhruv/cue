@@ -6,7 +6,7 @@ const groups = [
   { label: "WORKSPACE", items: [["/admin", "DB", "Dashboard"]] },
   { label: "ACADEMIC", items: [["/admin/semesters", "SE", "Semesters"], ["/admin/subjects", "SU", "Subjects"]] },
   { label: "CONTENT", items: [["/admin/syllabus", "SY", "Syllabus"], ["/admin/flashcards", "FC", "Flashcards"], ["/admin/pyqs", "PQ", "PYQs & PDFs"]] },
-  { label: "COMMUNITY", items: [["/admin/feedback", "VO", "Feedback & Testimonials"]] },
+  { label: "COMMUNITY", items: [["/admin/members", "MB", "Members & Users"], ["/admin/feedback", "VO", "Feedback & Testimonials"]] },
 ];
 
 export default function AdminShell({ active, email, eyebrow, title, children }: { active: string; email: string; eyebrow: string; title: React.ReactNode; children: React.ReactNode }) {

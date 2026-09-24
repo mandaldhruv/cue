@@ -4,34 +4,57 @@ import { createInsForgeServerClient } from "../lib/insforge/server";
 
 export type FeedbackSubmitResult = { ok: boolean; message: string };
 
-const categories = ["Overall experience", "Study content", "Design & usability", "Feature request", "Something else"];
-const years = ["First year", "Second year", "Third year", "Other"];
+const allowedRoles = ["Professor / Educator", "Student", "Professor / Teacher"];
 
 export async function submitFeedback(formData: FormData): Promise<FeedbackSubmitResult> {
   const rating = Number(formData.get("rating"));
-  const category = String(formData.get("category") ?? "").trim();
+  const role = String(formData.get("role") ?? "Student").trim();
   const message = String(formData.get("message") ?? "").trim();
-  const studentYear = String(formData.get("student_year") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const submissionId = String(formData.get("submission_id") ?? "").trim();
-  if (!submissionId || !Number.isInteger(rating) || rating < 1 || rating > 5) return { ok: false, message: "Choose a valid rating and try again." };
-  if (!categories.includes(category) || !years.includes(studentYear)) return { ok: false, message: "Complete the feedback topic and study year." };
-  if (message.length < 10 || message.length > 1000) return { ok: false, message: "Write between 10 and 1,000 characters." };
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, message: "Enter a valid email address or leave it blank." };
+
+  if (!submissionId || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return { ok: false, message: "Choose a valid rating and try again." };
+  }
+  if (!allowedRoles.includes(role)) {
+    return { ok: false, message: "Please select whether you are submitting as a Professor / Educator or Student." };
+  }
+  if (message.length < 10 || message.length > 1000) {
+    return { ok: false, message: "Write between 10 and 1,000 characters." };
+  }
 
   const client = await createInsForgeServerClient();
+  const { data: authData, error: authError } = await client.auth.getCurrentUser();
+  const user = authError ? null : authData?.user ?? null;
+
+  if (!user) {
+    return { ok: false, message: "Please sign in to your Cue account to submit feedback." };
+  }
+
+  const userEmail = (user.email || "").trim().toLowerCase();
+  const userName = (user.profile?.name || "").trim() || userEmail.split("@")[0] || "Cue Member";
+
   const { error } = await client.database.from("feedback_submissions").insert([{
     submission_id: submissionId,
     rating,
-    category,
+    category: "Overall experience",
     message,
-    student_year: studentYear,
-    email: email || null,
+    student_year: role,
+    email: userEmail || null,
+    user_id: user.id,
+    user_name: userName,
+    role: role,
     is_content_issue: formData.get("is_content_issue") === "on",
+    status: "new",
+    admin_note: "",
+    is_published: false,
   }]);
+
   if (error) {
-    if (error.message?.toLowerCase().includes("unique")) return { ok: true, message: "Your feedback was already received." };
+    if (error.message?.toLowerCase().includes("unique")) {
+      return { ok: true, message: "Your feedback was already received." };
+    }
     return { ok: false, message: error.message ?? "Feedback could not be sent right now." };
   }
+
   return { ok: true, message: "Feedback received." };
 }

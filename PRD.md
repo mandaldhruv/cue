@@ -96,7 +96,15 @@ The PYQ area helps students find actual exam papers by subject and year. A stude
 
 ### Flashcards
 
-Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**. Each card has a question or prompt followed by a detailed answer. Answers support text, bullet or numbered lists, tables, formulas and images so academic material retains its original structure. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
+Flashcards are Cue’s primary active-recall feature. They are created from the same structured study material available on Cue and organised as **subject → unit → topic → card**.
+
+On the subject deck selection library, each deck prominently displays its subject name, complemented by a legible, well-contrasted verified card count (e.g., "202 verified cards") designed with clean typography (semi-bold, comfortable spacing) to inform learners without cluttering badges.
+
+In Flashcard Mode:
+- The top header remains calm and minimal, presenting only the `[Topic Name]` and `[Close]` button.
+- The question progress capsule is placed directly on the question face of the card (replacing the previous static "QUESTION" label) as `[1 of N] Think before you reveal`.
+- The capsule uses a clean, pill-shaped outline with clear contrast, responsive across mobile, tablet, iPad, laptop, and desktop.
+- Questions and answers support text, bullet or numbered lists, tables, formulas and images so academic material retains its original structure. When a student finishes the final card in one topic, they can continue directly to the first card in the next topic.
 
 Students can browse flashcard questions freely. Revealing an answer requires a Cue student account.
 
@@ -140,7 +148,8 @@ The dashboard is divided into practical sections:
 | **Syllabus** | Choose a semester and subject, then manage syllabus units and detailed topic coverage. |
 | **Flashcards** | Organise decks by unit and topic; create rich question-and-answer cards with lists, tables, formulas and images; reorder topics/cards; and control whether each item is live or draft. |
 | **PYQs & PDFs** | Upload PDF papers, attach a title, year, exam type and description, then publish, replace or remove them. |
-| **Feedback & Testimonials** | Review student feedback, set its review status, add private notes and manage public educator testimonials. |
+| **Feedback & Testimonials** | Review student feedback, filter by rating/role, set review status, and publish approved testimonials with an explicit confirmation dialog. |
+| **Members** | View and search registered student accounts, admin profiles, verification status and activity stats. |
 
 ### Content publishing rules
 

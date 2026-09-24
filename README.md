@@ -30,16 +30,17 @@ Cue helps students find the right material quickly by organising it semester-wis
 - Dedicated subject workspaces (Syllabus, PYQs, Flashcards)
 - Published syllabus units and detailed coverage
 - Previous-year paper library with PDF preview and download
-- Subject-based flashcard decks for active recall
+- Subject-based flashcard decks with clear verified card counts and active recall
+- Clean, focused Flashcard Mode with card-face question progress capsule (`[1 of N] Think before you reveal`) and minimal header
 - Student accounts with Google and email/password sign-in
 - Email verification for newly created student accounts
 - Login required only for protected outputs: PDF downloads and flashcard solutions
 - Persistent student sessions, with the signed-in learner shown in the navigation
 - A personalized home greeting that rotates sequentially by authenticated learner and IST time block
 - Clear empty and coming-soon states when content is not available
-- Private feedback form for student suggestions and issue reporting
+- Private feedback form with student role selection and content issue reporting
 - Educator testimonials managed by the admin
-- Responsive experience across mobile, tablet and desktop
+- Responsive experience across mobile, tablet, iPad, laptop and desktop
 
 ### Admin Dashboard
 
@@ -53,7 +54,8 @@ Cue includes a private admin workspace for managing all study material without e
 | Syllabus | Manage syllabus units and module coverage |
 | Flashcards | Organise units/topics, create rich cards, reorder topics/cards and control publishing |
 | PYQs & PDFs | Upload, replace, publish and manage question-paper PDFs |
-| Feedback | Review private student feedback and update review status |
+| Feedback | Review student feedback, filter by rating/role, and publish testimonials with confirmation dialog |
+| Members | Search, inspect, and monitor student accounts and admin roles |
 | Testimonials | Add approved educator testimonials with optional headshots |
 
 The main admin dashboard heading also uses Cue's private Admin greeting collection. Student and Admin greeting sequences are isolated from one another. An authorised Admin using the public Home page can still receive the Home-page Student collection without affecting the Admin sequence.

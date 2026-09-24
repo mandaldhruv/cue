@@ -89,6 +89,10 @@ export type FeedbackRecord = {
   message: string;
   student_year: string;
   email: string | null;
+  user_id?: string | null;
+  user_name?: string | null;
+  role?: string | null;
+  is_published?: boolean;
   is_content_issue: boolean;
   status: FeedbackStatus;
   admin_note: string;
@@ -97,6 +101,7 @@ export type FeedbackRecord = {
 
 export type TestimonialRecord = {
   id: string;
+  feedback_id?: string | null;
   person_name: string;
   designation: string;
   institution: string;
@@ -111,4 +116,15 @@ export type TestimonialRecord = {
   consent_note: string;
   sort_order: number;
   created_at: string;
+};
+
+export type MemberRecord = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  email_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  last_seen: string | null;
 };
