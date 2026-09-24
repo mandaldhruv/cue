@@ -233,3 +233,32 @@ test("PYQ paper title typography uses clean, readable medium weight without heav
   assert.match(enhancements, /\.pdf-preview-modal header b\s*\{[\s\S]*font-weight:\s*600\s*!important/);
 });
 
+test("Subjects and Flashcards typography uses clean, normalized medium/normal weight without heavy bold", async () => {
+  const [globals, enhancements] = await Promise.all([
+    source("app/globals.css"),
+    source("app/enhancements.css"),
+  ]);
+
+  // Subject card headings use clean medium/normal weight (500)
+  assert.match(globals, /\.subject-card h3\{font-size:18px;letter-spacing:-.03em;margin-bottom:9px;font-weight:500\}/);
+  assert.doesNotMatch(globals, /\.subject-card h3\{font-size:18px;letter-spacing:-.03em;margin-bottom:9px;font-weight:750\}/);
+  assert.match(enhancements, /\.subjects-explorer \.subject-card h3\s*\{[^}]*font-weight:\s*500/);
+  assert.doesNotMatch(enhancements, /\.subjects-explorer \.subject-card h3\s*\{[^}]*font-weight:\s*750/);
+
+  // Deck titles and metadata use clean 500 weight instead of heavy 750
+  assert.match(globals, /\.real-deck-grid h2\{margin:50px 0 9px;font-size:22px;line-height:1.2;font-weight:500\}/);
+  assert.doesNotMatch(globals, /\.real-deck-grid h2\{margin:50px 0 9px;font-size:22px;line-height:1.2;font-weight:750\}/);
+  assert.match(enhancements, /\.real-deck-grid h2\s*\{[^}]*font-weight:\s*500/);
+  assert.doesNotMatch(enhancements, /\.real-deck-grid h2\s*\{[^}]*font-weight:\s*750/);
+
+  // Flashcard unit navigation and question list items use clean 500 weight
+  assert.match(enhancements, /\.flashcard-unit-nav nav b\s*\{[^}]*font-weight:\s*500/);
+  assert.match(enhancements, /\.flashcard-question-list>button b\s*\{[^}]*font-weight:\s*500/);
+  assert.match(enhancements, /\.flashcard-topic-tabs button\s*\{[^}]*font-weight:\s*500/);
+
+  // Responsive mobile media queries maintain clean 500 weight
+  assert.match(enhancements, /@media\s*\(max-width:\s*760px\)\s*\{[\s\S]*\.subjects-explorer \.subject-card h3\s*\{[^}]*font-weight:\s*500/);
+  assert.match(enhancements, /@media\s*\(max-width:\s*768px\)\s*\{[\s\S]*\.subjects-explorer \.subject-card h3,\s*[\s\S]*\.real-deck-grid h2,\s*[\s\S]*font-weight:\s*500\s*!important/);
+});
+
+
