@@ -29,7 +29,7 @@ Cue helps students find the right material quickly by organising it semester-wis
 - Semester and subject-wise organisation
 - Dedicated subject workspaces (Syllabus, PYQs, Flashcards)
 - Published syllabus units and detailed coverage
-- Previous-year paper library with PDF preview and download
+- Previous-year paper library with PDF preview, download, and clean medium-weight typography
 - Subject-based flashcard decks with clear verified card counts and active recall
 - Clean, focused Flashcard Mode with card-face question progress capsule (`[1 of N] Think before you reveal`) and minimal header
 - Student accounts with Google and email/password sign-in

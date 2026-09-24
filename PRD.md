@@ -92,7 +92,7 @@ If material has not yet been uploaded, Cue does not invent dummy content. It sho
 
 ### PYQs and PDFs
 
-The PYQ area helps students find actual exam papers by subject and year. A student can preview a published paper in the browser without an account. Downloading a published PDF requires a Cue student account.
+The PYQ area helps students find actual exam papers by subject and year. A student can preview a published paper in the browser without an account. Downloading a published PDF requires a Cue student account. Paper titles (e.g. "Equity and Debt Markets - October 2025") utilize a clean, legible medium font weight (600) rather than heavy bold, ensuring typographic consistency with the website-wide design hierarchy across desktop, laptop, tablet, iPad, and mobile devices while preserving the prominent year heading, examination badges, and metadata.
 
 ### Flashcards
 

@@ -206,3 +206,30 @@ test("About page applies cohesive, premium green theme", async () => {
   assert.match(enhancements, /\.about-intro \.eyebrow\s*\{[\s\S]*color:\s*#1e594d/);
   assert.match(enhancements, /\.about-page \.mission-card h2 em\s*\{[\s\S]*color:\s*#1e594d/);
 });
+
+test("PYQ paper title typography uses clean, readable medium weight without heavy bold", async () => {
+  const [globals, enhancements, pyqLibrary] = await Promise.all([
+    source("app/globals.css"),
+    source("app/enhancements.css"),
+    source("app/pyqs/PyqLibrary.tsx"),
+  ]);
+
+  // Paper card markup includes the exam type tag, h3 title, and preview/download actions
+  assert.match(pyqLibrary, /className="public-paper-copy"/);
+  assert.match(pyqLibrary, /<h3>\{paper\.title\}<\/h3>/);
+  assert.match(pyqLibrary, /<span>\{paper\.exam_type\}<\/span>/);
+
+  // Paper titles use clean medium weight (600) instead of heavy bold (750)
+  assert.match(globals, /\.public-paper-copy h3\{font-size:16px;font-weight:600/);
+  assert.doesNotMatch(globals, /\.public-paper-copy h3\{font-size:16px;font-weight:750/);
+  assert.match(enhancements, /\.public-paper-copy h3\s*\{[\s\S]*font-weight:\s*600\s*!important/);
+
+  // Mobile media query preserves clean 600 weight
+  assert.match(globals, /\.public-paper-copy h3\{font-size:15px;font-weight:600\}/);
+  assert.match(enhancements, /@media\s*\(max-width:\s*650px\)\s*\{[\s\S]*\.public-paper-copy h3\s*\{[\s\S]*font-weight:\s*600\s*!important/);
+
+  // Preview modal header title also uses consistent 600 weight
+  assert.match(globals, /\.pdf-preview-modal header b\{font-size:15px;font-weight:600/);
+  assert.match(enhancements, /\.pdf-preview-modal header b\s*\{[\s\S]*font-weight:\s*600\s*!important/);
+});
+
