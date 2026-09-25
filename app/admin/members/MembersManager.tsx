@@ -249,16 +249,19 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
                   </span>
                 </div>
 
-                {/* Column 5: Registration Date */}
-                <div className="members-col-registered">
-                  <b>{formatIst(member.created_at)}</b>
-                  <small>{timeAgo(member.created_at)}</small>
-                </div>
+                {/* Column 5 & 6: Registration Date & Last Active */}
+                <div className="members-dates-grid">
+                  <div className="members-col-registered">
+                    <span className="members-mobile-label">REGISTRATION DATE</span>
+                    <b>{formatIst(member.created_at)}</b>
+                    <small>{timeAgo(member.created_at)}</small>
+                  </div>
 
-                {/* Column 6: Last Active */}
-                <div className="members-col-active">
-                  <b>{member.last_seen ? formatIst(member.last_seen) : formatIst(lastActiveTime)}</b>
-                  <small>{timeAgo(member.last_seen || lastActiveTime)}</small>
+                  <div className="members-col-active">
+                    <span className="members-mobile-label">LAST ACTIVE</span>
+                    <b>{member.last_seen ? formatIst(member.last_seen) : formatIst(lastActiveTime)}</b>
+                    <small>{timeAgo(member.last_seen || lastActiveTime)}</small>
+                  </div>
                 </div>
               </div>
             );
