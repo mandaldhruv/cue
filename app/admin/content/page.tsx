@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
+import { requireAdminSession } from "../../lib/insforge/server";
 
-export default function AdminContentRedirect() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminContentRedirect() {
+  await requireAdminSession();
   redirect("/admin/syllabus");
 }

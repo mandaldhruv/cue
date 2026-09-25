@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getAdminSession } from "../../lib/insforge/server";
+import { requireAdminSession } from "../../lib/insforge/server";
 import AdminShell from "../AdminShell";
 import type { MemberRecord } from "../types";
 import MembersManager from "./MembersManager";
@@ -7,8 +6,7 @@ import MembersManager from "./MembersManager";
 export const dynamic = "force-dynamic";
 
 export default async function AdminMembersPage() {
-  const { user, isAdmin, client } = await getAdminSession();
-  if (!user || !isAdmin) redirect("/admin/login");
+  const { user, client } = await requireAdminSession();
 
   const { data, error } = await client.database.rpc("get_cue_members");
 

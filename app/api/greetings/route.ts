@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import greetingMessages from "../../greetings/greeting-messages.generated.json";
-import { createInsForgeServerClient } from "../../lib/insforge/server";
+import { createInsForgeServerClient, isAuthorizedAdminEmail } from "../../lib/insforge/server";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +31,13 @@ export async function POST(request: NextRequest) {
     const { data: userData, error: userError } = await client.auth.getCurrentUser();
     const user = userError ? null : userData?.user ?? null;
     if (!user) return new NextResponse(null, { status: 401 });
+
+    if (audience === "admin") {
+      const email = (user.email ?? "").trim().toLowerCase();
+      if (!isAuthorizedAdminEmail(email)) {
+        return NextResponse.json({ message: "Forbidden: Admin access required." }, { status: 403 });
+      }
+    }
 
     const { data, error } = await client.database.rpc("reserve_cue_greeting", {
       p_audience: audience,

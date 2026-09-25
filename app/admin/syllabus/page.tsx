@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getAdminSession } from "../../lib/insforge/server";
+import { requireAdminSession } from "../../lib/insforge/server";
 import AdminShell from "../AdminShell";
 import type { ContentRecord, SubjectRecord } from "../types";
 import SyllabusManager from "./SyllabusManager";
@@ -7,8 +6,7 @@ import SyllabusManager from "./SyllabusManager";
 export const dynamic = "force-dynamic";
 
 export default async function AdminSyllabusPage() {
-  const { user, isAdmin, client } = await getAdminSession();
-  if (!user || !isAdmin) redirect("/admin/login");
+  const { user, client } = await requireAdminSession();
 
   const [{ data: subjects, error: subjectError }, { data: syllabus, error: syllabusError }] = await Promise.all([
     client.database

@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getAdminSession } from "../lib/insforge/server";
+import { requireAdminSession } from "../lib/insforge/server";
 import AdminShell from "./AdminShell";
 import AdminDashboardRefresh from "./AdminDashboardRefresh";
 import { AdminGreeting } from "../greetings/GreetingDisplay";
@@ -46,9 +45,14 @@ function formatIst(value: string) {
   }).format(date)} IST`;
 }
 
+function countRecentMembers(members: { created_at: string }[] | null) {
+  if (!members?.length) return 0;
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return members.filter((m) => new Date(m.created_at).getTime() > cutoff).length;
+}
+
 export default async function AdminDashboard() {
-  const { user, isAdmin, client } = await getAdminSession();
-  if (!user || !isAdmin) redirect("/admin/login");
+  const { user, client } = await requireAdminSession();
   const [{ data: semesters }, { data: subjects }, { data: content }, { data: feedback }, { data: members }, { data: activity }] = await Promise.all([
     client.database.from("semesters").select("id,status"),
     client.database.from("subjects").select("id,name,slug,semester_number,is_published").eq("course_code", "BMS").order("semester_number", { ascending: true }),
@@ -61,8 +65,7 @@ export default async function AdminDashboard() {
   const draftContent = (content?.length ?? 0) - publishedContent;
   const newFeedback = feedback?.filter((item: { status: string }) => item.status === "new").length ?? 0;
   const totalMembers = members?.length ?? 0;
-  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const newMembersThisWeek = (members as { created_at: string }[] | null)?.filter((m) => new Date(m.created_at).getTime() > oneWeekAgo).length ?? 0;
+  const newMembersThisWeek = countRecentMembers(members as { created_at: string }[] | null);
   const needsAttention = (subjects ?? []).map((subject: { id: string; name: string; slug: string; semester_number: number; is_published: boolean }) => {
     const items = content?.filter((item: { subject_id: string }) => item.subject_id === subject.id) ?? [];
     const missing = ["syllabus_unit", "flashcard", "pyq"].filter((type) => !items.some((item: { content_type: string; is_published: boolean }) => item.content_type === type && item.is_published));

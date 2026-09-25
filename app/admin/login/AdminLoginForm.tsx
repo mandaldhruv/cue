@@ -5,10 +5,15 @@ import { adminAuthAction, type AdminAuthState } from "../actions";
 
 const initialAdminAuthState: AdminAuthState = { error: "", email: "" };
 
-export default function AdminLoginForm() {
+export default function AdminLoginForm({ isUnauthorizedStudent = false }: { isUnauthorizedStudent?: boolean }) {
   const [state, action, pending] = useActionState(adminAuthAction, initialAdminAuthState);
   return <form className="login-card admin-auth-card" action={action}>
     <div><span>PRIVATE ACCESS</span><h2>Welcome back</h2><p>Sign in with an authorized Cue administrator account.</p></div>
+    {isUnauthorizedStudent && !state.error && (
+      <div className="admin-auth-error" role="alert">
+        Admin access required. The current session does not have administrator privileges. Please sign in with an authorized administrator account.
+      </div>
+    )}
     <label>Email<input name="email" type="email" defaultValue={state.email} placeholder="Enter your email" required autoComplete="username" autoFocus/></label>
     <label>Password<input name="password" type="password" placeholder="Enter your password" minLength={6} required autoComplete="current-password"/></label>
     {state.error && <div className="admin-auth-error" role="alert">{state.error}</div>}
