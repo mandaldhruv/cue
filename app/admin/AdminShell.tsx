@@ -5,6 +5,7 @@ import { getAdminNotificationDataAction } from "./notifications/actions";
 import { AdminNotificationProvider } from "./notifications/AdminNotificationContext";
 import AdminNotificationBell from "./notifications/AdminNotificationBell";
 import { AdminSidebarNav, type NavGroup } from "./notifications/AdminSidebarNav";
+import { AdminMobileNav } from "./AdminMobileNav";
 
 const groups: NavGroup[] = [
   { label: "WORKSPACE", items: [["/admin", "DB", "Dashboard"]] },
@@ -61,21 +62,7 @@ export default async function AdminShell({
           <div className="admin-mobile-actions">
             <AdminNotificationBell className="admin-mobile-bell" />
             <Link href="/" target="_blank" aria-label="View live website">Live site ↗</Link>
-            <details className="admin-mobile-menu">
-              <summary>
-                <span/><span/><small>Menu</small>
-              </summary>
-              <div className="admin-mobile-drawer">
-                <div className="admin-mobile-account">
-                  <span>SIGNED IN AS</span>
-                  <b>{email}</b>
-                </div>
-                <AdminSidebarNav groups={groups} active={active} isMobile />
-                <form action={adminSignOut}>
-                  <button type="submit">Sign out</button>
-                </form>
-              </div>
-            </details>
+            <AdminMobileNav email={email} active={active} groups={groups} signOutAction={adminSignOut} />
           </div>
         </header>
         <section className="admin-workspace">

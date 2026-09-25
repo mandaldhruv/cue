@@ -1,6 +1,7 @@
 "use server";
 
 import { createInsForgeServerClient } from "../lib/insforge/server";
+import { notifyAdminFeedback } from "../lib/email/admin-notifications";
 
 export type FeedbackSubmitResult = { ok: boolean; message: string };
 
@@ -55,6 +56,19 @@ export async function submitFeedback(formData: FormData): Promise<FeedbackSubmit
     }
     return { ok: false, message: error.message ?? "Feedback could not be sent right now." };
   }
+
+  // Trigger admin email notification safely (never blocking/breaking user flow)
+  void notifyAdminFeedback({
+    submissionId,
+    name: userName,
+    email: userEmail,
+    role,
+    rating,
+    message,
+    isContentIssue: formData.get("is_content_issue") === "on",
+    contentReference: "Cue BMS Study Resources",
+    submittedAt: new Date(),
+  });
 
   return { ok: true, message: "Feedback received." };
 }

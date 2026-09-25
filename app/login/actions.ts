@@ -3,6 +3,7 @@
 import { createAuthActions } from "@insforge/sdk/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { notifyAdminNewMember } from "../lib/email/admin-notifications";
 
 export type LoginState = {
   status: "idle" | "error" | "verify" | "success";
@@ -42,7 +43,17 @@ export async function signUpAction(_: LoginState, formData: FormData): Promise<L
     const auth = createAuthActions({ cookies: await cookies() });
     const { data, error } = await auth.signUp({ name, email, password });
     if (error || !data) return { status: "error", message: friendlyError(error?.message), email };
-    if (data.user?.emailVerified) return { status: "success", message: "Your Cue account is ready.", email };
+    if (data.user?.emailVerified) {
+      void notifyAdminNewMember({
+        userId: data.user.id,
+        name: name || "Student",
+        email,
+        role: "Student",
+        status: "Verified",
+        joinedAt: new Date(),
+      });
+      return { status: "success", message: "Your Cue account is ready.", email };
+    }
     return { status: "verify", message: "We sent a 6-digit verification code to your email.", email };
   } catch {
     return { status: "error", message: "Cue could not connect right now. Please try again in a moment.", email };
@@ -57,6 +68,19 @@ export async function verifyEmailAction(_: LoginState, formData: FormData): Prom
     const auth = createAuthActions({ cookies: await cookies() });
     const { data, error } = await auth.verifyEmail({ email, otp });
     if (error || !data?.user) return { status: "verify", message: error?.message || "That code is incorrect or has expired.", email };
+    const userName =
+      ((data.user.profile as Record<string, string> | undefined)?.name) ||
+      ((data.user.metadata as Record<string, string> | undefined)?.name) ||
+      email.split("@")[0] ||
+      "Student";
+    void notifyAdminNewMember({
+      userId: data.user.id,
+      name: userName,
+      email,
+      role: "Student",
+      status: "Verified",
+      joinedAt: new Date(),
+    });
     return { status: "success", message: "Email verified. Welcome to Cue.", email };
   } catch {
     return { status: "verify", message: "Cue could not verify that code right now. Please try again.", email };

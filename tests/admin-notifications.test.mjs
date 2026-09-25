@@ -126,20 +126,19 @@ test("Notification Panel & Empty State: header, mark-all-read, item layout, and 
   assert.match(bell, /type-content/);
 });
 
-test("Sidebar Category Badges: dynamic badges, omit on zero, and section auto-read", async () => {
+test("Sidebar Navigation: clean labels, no member/feedback count badges or dots, context section auto-read", async () => {
   const [sidebarNav, context] = await Promise.all([
     source("app/admin/notifications/AdminSidebarNav.tsx"),
     source("app/admin/notifications/AdminNotificationContext.tsx"),
   ]);
 
-  // Sidebar renders badge only when count > 0, never renders [0]
-  assert.match(sidebarNav, /\{count > 0 && \(\s*<span className="admin-sidebar-badge">\{count > 99 \? "99\+" : count\}<\/span>\s*\)\}/);
+  // Sidebar navigation does NOT display count badges or red dots
+  assert.doesNotMatch(sidebarNav, /admin-sidebar-badge/);
+  assert.doesNotMatch(sidebarNav, /\{count > 0 &&/);
 
-  // Maps categories to routes
-  assert.match(sidebarNav, /href === "\/admin\/members"/);
-  assert.match(sidebarNav, /href === "\/admin\/feedback"/);
-  assert.match(sidebarNav, /href === "\/admin\/pyqs"/);
-  assert.match(sidebarNav, /href === "\/admin\/syllabus" \|\| href === "\/admin\/flashcards"/);
+  // Clean icon + label structure
+  assert.match(sidebarNav, /className="admin-nav-icon">\{icon\}<\/span>/);
+  assert.match(sidebarNav, /className="admin-sidebar-label">\{label\}<\/span>/);
 
   // Context auto-marks category notifications as read when opening section
   assert.match(context, /function routeToCategory/);
