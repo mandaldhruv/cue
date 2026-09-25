@@ -198,6 +198,18 @@ export async function saveContentItem(formData: FormData): Promise<AdminActionRe
   if (error) return fail(error.message ?? "Could not save this content item.");
   const entityId = id || data?.[0]?.id || null;
   await logAction(session.client, id ? "update" : "create", "content_item", entityId, `${contentType}: ${title}`);
+  if (payload.is_published) {
+    const isSyllabus = contentType === "syllabus_unit";
+    await session.client.database.rpc("record_admin_notification", {
+      p_type: "content_updated",
+      p_title: isSyllabus ? "Syllabus updated" : "Study content updated",
+      p_message: `${title} ${isSyllabus ? "syllabus" : "content"} was ${id ? "updated" : "added"}`,
+      p_category: "content",
+      p_priority: "normal",
+      p_link: isSyllabus ? "/admin/syllabus" : "/admin/content",
+      p_related_id: entityId,
+    });
+  }
   refreshContent();
   revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
@@ -223,6 +235,18 @@ export async function setContentPublished(id: string, isPublished: boolean): Pro
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id);
   if (error) return fail(error.message ?? "Could not change content visibility.");
   await logAction(session.client, "visibility", "content_item", id, `${item?.title ?? (item?.content_type === "flashcard" ? "Flashcard" : "Syllabus")} · ${isPublished ? "published" : "moved to draft"}`);
+  if (isPublished) {
+    const isFlashcard = item?.content_type === "flashcard";
+    await session.client.database.rpc("record_admin_notification", {
+      p_type: "content_updated",
+      p_title: isFlashcard ? "Flashcard published" : "Syllabus published",
+      p_message: `${item?.title ?? (isFlashcard ? "Flashcard" : "Syllabus")} was published`,
+      p_category: "content",
+      p_priority: "normal",
+      p_link: isFlashcard ? "/admin/flashcards" : "/admin/syllabus",
+      p_related_id: id,
+    });
+  }
   refreshContent();
   revalidatePath("/admin/syllabus");
   revalidatePath("/admin/content");
@@ -370,7 +394,19 @@ export async function saveFlashcard(formData: FormData): Promise<AdminActionResu
   const query = id ? session.client.database.from("content_items").update(payload).eq("id", id).eq("content_type", "flashcard").select("id") : session.client.database.from("content_items").insert([payload]).select("id");
   const { data, error } = await query;
   if (error) return fail(error.message ?? "Could not save this flashcard.");
-  await logAction(session.client, id ? "update" : "create", "flashcard", id || data?.[0]?.id || null, questionText.slice(0, 120));
+  const cardId = id || data?.[0]?.id || null;
+  await logAction(session.client, id ? "update" : "create", "flashcard", cardId, questionText.slice(0, 120));
+  if (formData.get("is_published") === "true") {
+    await session.client.database.rpc("record_admin_notification", {
+      p_type: "content_updated",
+      p_title: id ? "Flashcard updated" : "New flashcard added",
+      p_message: `${questionText.slice(0, 50)} was ${id ? "updated" : "added"}`,
+      p_category: "content",
+      p_priority: "normal",
+      p_link: "/admin/flashcards",
+      p_related_id: cardId,
+    });
+  }
   refreshContent(); revalidatePath("/admin/flashcards"); revalidatePath("/flashcards");
   return { ok: true, message: id ? "Flashcard updated." : "Flashcard created." };
 }
@@ -433,6 +469,17 @@ export async function savePyq(formData: FormData): Promise<AdminActionResult> {
   if (oldFileKey && oldFileKey !== fileKey) await session.client.storage.from("cue-pyqs").remove(oldFileKey);
   const entityId = id || data?.[0]?.id || null;
   await logAction(session.client, id ? "update" : "create", "pyq", entityId, `${title} · ${year}`);
+  if (payload.is_published) {
+    await session.client.database.rpc("record_admin_notification", {
+      p_type: "pyq_updated",
+      p_title: id ? "PYQ updated" : "New PYQ added",
+      p_message: `${title} was ${id ? "updated" : "added"}`,
+      p_category: "pyqs",
+      p_priority: "normal",
+      p_link: "/admin/pyqs",
+      p_related_id: entityId,
+    });
+  }
   refreshContent();
   revalidatePath("/admin/pyqs");
   revalidatePath("/pyqs");
@@ -446,6 +493,17 @@ export async function setPyqPublished(id: string, isPublished: boolean): Promise
   const { error } = await session.client.database.from("content_items").update({ is_published: isPublished }).eq("id", id).eq("content_type", "pyq");
   if (error) return fail(error.message ?? "Could not change paper visibility.");
   await logAction(session.client, "visibility", "pyq", id, `${paper?.[0]?.title ?? "PDF"}${paper?.[0]?.academic_year ? ` · ${paper[0].academic_year}` : ""} · ${isPublished ? "published" : "moved to draft"}`);
+  if (isPublished && paper?.[0]?.title) {
+    await session.client.database.rpc("record_admin_notification", {
+      p_type: "pyq_updated",
+      p_title: "PYQ published",
+      p_message: `${paper[0].title} was published`,
+      p_category: "pyqs",
+      p_priority: "normal",
+      p_link: "/admin/pyqs",
+      p_related_id: id,
+    });
+  }
   refreshContent();
   revalidatePath("/admin/pyqs"); revalidatePath("/pyqs");
   return { ok: true, message: isPublished ? "Paper published." : "Paper moved to draft." };
