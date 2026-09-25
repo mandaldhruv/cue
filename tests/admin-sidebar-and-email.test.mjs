@@ -41,16 +41,16 @@ test("Responsive Breakpoints & Drawer: Desktop fixed sidebar, Tablet/Mobile full
     source("app/admin/AdminMobileNav.tsx"),
   ]);
 
-  // Desktop (min-width: 1025px): fixed sidebar and 260px grid
-  assert.match(enhancements, /@media\(min-width:\s*1025px\)[\s\S]*?\.admin-dashboard\s*\{[\s\S]*?grid-template-columns:\s*260px/);
-  assert.match(enhancements, /@media\(min-width:\s*1025px\)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*flex/);
-  assert.match(enhancements, /@media\(min-width:\s*1025px\)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*none/);
+  // Desktop (min-width: 1201px): fixed sidebar and 260px grid
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-dashboard\s*\{[\s\S]*?grid-template-columns:\s*260px/);
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*flex/);
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*none/);
 
-  // Tablet & Mobile (max-width: 1024px): sidebar hidden, full-width workspace, mobile header visible
-  assert.match(enhancements, /@media\(max-width:\s*1024px\)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*none/);
-  assert.match(enhancements, /@media\(max-width:\s*1024px\)[\s\S]*?\.admin-dashboard\s*\{[\s\S]*?display:\s*block/);
-  assert.match(enhancements, /@media\(max-width:\s*1024px\)[\s\S]*?\.admin-workspace\s*\{[\s\S]*?width:\s*100%/);
-  assert.match(enhancements, /@media\(max-width:\s*1024px\)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*flex/);
+  // Tablet, iPad & Mobile: sidebar hidden, full-width workspace, mobile header visible
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*none/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-dashboard\s*\{[\s\S]*?display:\s*block/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-workspace\s*\{[\s\S]*?width:\s*100%/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*flex/);
 
   // Drawer slide-out from LEFT with backdrop
   assert.match(enhancements, /\.admin-drawer-backdrop\s*\{[^}]*position:\s*fixed/);
