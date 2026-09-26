@@ -12,7 +12,7 @@ export type AuthContextValue = {
   user: CueUser | null;
   loading: boolean;
   refreshUser: () => Promise<CueUser | null>;
-  requireLogin: () => Promise<boolean>;
+  requireLogin: (customReturnPath?: string) => Promise<boolean>;
   closeLoginModal: () => void;
 };
 

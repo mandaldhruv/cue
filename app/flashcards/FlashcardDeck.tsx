@@ -10,35 +10,118 @@ export default function FlashcardDeck({
   topics,
   cards,
   subjectName,
+  initialUnitId,
+  initialTopicId,
+  initialCardId,
+  initialCardIndex,
+  initialAutoOpen = false,
 }: {
   units: PublicFlashcardUnit[];
   topics: PublicFlashcardTopic[];
   cards: PublicContentRecord[];
   subjectName: string;
+  initialUnitId?: string;
+  initialTopicId?: string;
+  initialCardId?: string;
+  initialCardIndex?: string;
+  initialAutoOpen?: boolean;
 }) {
-  const { requireLogin } = useAuth();
+  const { user, requireLogin } = useAuth();
   const organisedCards = cards.filter((card) => card.flashcard_unit_id && card.flashcard_topic_id);
   const unassignedCards = cards.filter((card) => !card.flashcard_unit_id || !card.flashcard_topic_id);
   const availableUnits = units.filter((unit) => organisedCards.some((card) => card.flashcard_unit_id === unit.id));
-  const [unitId, setUnitId] = useState(availableUnits[0]?.id ?? (unassignedCards.length ? "__unassigned__" : ""));
-  const availableTopics = topics.filter((topic) => topic.unit_id === unitId && organisedCards.some((card) => card.flashcard_topic_id === topic.id));
-  const [topicId, setTopicId] = useState("");
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
 
-  // Mobile / tablet step-by-step navigation state
-  const [mobileStep, setMobileStep] = useState<"units" | "topics" | "cards">("units");
-  const [mobileCardIndex, setMobileCardIndex] = useState(0);
-  const [mobileRevealed, setMobileRevealed] = useState(false);
-  const [isMobileFlashcardOpen, setIsMobileFlashcardOpen] = useState(false);
+  const resolvedInitialUnit = initialUnitId && (availableUnits.some((u) => u.id === initialUnitId) || (initialUnitId === "__unassigned__" && unassignedCards.length > 0))
+    ? initialUnitId
+    : (availableUnits[0]?.id ?? (unassignedCards.length ? "__unassigned__" : ""));
+
+  const [unitId, setUnitId] = useState(resolvedInitialUnit);
+  const availableTopics = topics.filter((topic) => topic.unit_id === unitId && organisedCards.some((card) => card.flashcard_topic_id === topic.id));
+
+  const resolvedInitialTopic = initialTopicId && availableTopics.some((t) => t.id === initialTopicId)
+    ? initialTopicId
+    : (availableTopics[0]?.id ?? "");
+
+  const [topicId, setTopicId] = useState(resolvedInitialTopic);
 
   const selectedTopicId = availableTopics.some((topic) => topic.id === topicId) ? topicId : availableTopics[0]?.id ?? "";
   const visibleCards = unitId === "__unassigned__" ? unassignedCards : cards.filter((card) => card.flashcard_topic_id === selectedTopicId);
   const selectedUnit = units.find((unit) => unit.id === unitId);
   const selectedUnitIndex = availableUnits.findIndex((unit) => unit.id === unitId);
   const selectedTopic = topics.find((topic) => topic.id === selectedTopicId);
-  const viewerCard = viewerIndex === null ? null : visibleCards[viewerIndex];
   const selectedTopicIndex = availableTopics.findIndex((topic) => topic.id === selectedTopicId);
+
+  // Calculate target initial index from props
+  let initialTargetIndex = 0;
+  if (initialCardId) {
+    const found = visibleCards.findIndex((c) => c.id === initialCardId);
+    if (found >= 0) initialTargetIndex = found;
+  } else if (initialCardIndex !== undefined) {
+    const parsed = parseInt(initialCardIndex, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed < visibleCards.length) {
+      initialTargetIndex = parsed;
+    }
+  }
+
+  const initialMobileStep: "units" | "topics" | "cards" = (initialTopicId || initialCardId || initialCardIndex || initialAutoOpen)
+    ? "cards"
+    : (initialUnitId && initialUnitId !== "__unassigned__")
+      ? "topics"
+      : "units";
+
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  // Mobile / tablet step-by-step navigation state
+  const [mobileStep, setMobileStep] = useState<"units" | "topics" | "cards">(initialMobileStep);
+  const [mobileCardIndex, setMobileCardIndex] = useState(initialTargetIndex);
+  const [mobileRevealed, setMobileRevealed] = useState(false);
+  const [isMobileFlashcardOpen, setIsMobileFlashcardOpen] = useState(false);
+
+  // Synchronize client-side URL params on initial hydration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlUnit = params.get("unit");
+      const urlTopic = params.get("topic");
+      const urlCard = params.get("card");
+      const urlCardIndex = params.get("cardIndex");
+      const urlOpen = params.get("open") === "1";
+
+      if (urlUnit && urlUnit !== unitId && (availableUnits.some((u) => u.id === urlUnit) || urlUnit === "__unassigned__")) {
+        setUnitId(urlUnit);
+      }
+      if (urlTopic && urlTopic !== topicId) {
+        setTopicId(urlTopic);
+      }
+      if (urlTopic || urlCard || urlCardIndex || urlOpen) {
+        setMobileStep("cards");
+      }
+    } catch {}
+  }, []);
+
+  // Handle returning authenticated users after login
+  const [autoOpenHandled, setAutoOpenHandled] = useState(false);
+  useEffect(() => {
+    if (!initialAutoOpen || autoOpenHandled || !user) return;
+    setAutoOpenHandled(true);
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= 1024;
+    if (isMobile) {
+      setMobileStep("cards");
+      setMobileCardIndex(initialTargetIndex);
+      setIsMobileFlashcardOpen(true);
+    } else {
+      setViewerIndex(initialTargetIndex);
+    }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("open");
+      window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+    } catch {}
+  }, [autoOpenHandled, initialAutoOpen, initialTargetIndex, user]);
+
+  const viewerCard = viewerIndex === null ? null : visibleCards[viewerIndex];
   const canMovePrevious = viewerIndex !== null && (
     viewerIndex > 0 || (unitId !== "__unassigned__" && selectedTopicIndex > 0)
   );
@@ -85,6 +168,35 @@ export default function FlashcardDeck({
     setMobileRevealed((value) => !value);
   }
 
+  // Question click handler with authentication gating before entering Flashcard Mode
+  async function handleQuestionClick(index: number, isMobile: boolean) {
+    const card = visibleCards[index];
+    if (!card) return;
+
+    // Formulate return path with exact subject, unit, topic, and card
+    const search = new URLSearchParams();
+    if (unitId) search.set("unit", unitId);
+    if (selectedTopicId) search.set("topic", selectedTopicId);
+    search.set("card", card.id);
+    search.set("cardIndex", String(index));
+    search.set("open", "1");
+    const targetUrl = `${window.location.pathname}?${search.toString()}`;
+
+    // Gate on login BEFORE entering Flashcard Mode
+    const loggedIn = targetUrl ? await requireLogin(targetUrl) : await requireLogin();
+    if (!loggedIn) {
+      // User is not logged in: login modal opens, user stays on question list!
+      return;
+    }
+
+    // User is logged in: enter Flashcard Mode directly
+    if (isMobile) {
+      openMobileFlashcard(index);
+    } else {
+      open(index);
+    }
+  }
+
   function move(direction: -1 | 1) {
     if (!visibleCards.length || viewerIndex === null) return;
     const nextIndex = viewerIndex + direction;
@@ -113,11 +225,33 @@ export default function FlashcardDeck({
     }
   }
 
+  // Safe body scroll locking only while mobile fullscreen flashcard is active
+  useEffect(() => {
+    if (!isMobileFlashcardOpen) {
+      if (typeof document !== "undefined" && document.body.style.overflow === "hidden") {
+        document.body.style.overflow = "";
+      }
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow === "hidden" ? "" : previousOverflow;
+    };
+  }, [isMobileFlashcardOpen]);
+
+  // Safety cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof document !== "undefined" && document.body.style.overflow === "hidden") {
+        document.body.style.overflow = "";
+      }
+    };
+  }, []);
+
+  // Keyboard controls for mobile flashcard mode
   useEffect(() => {
     if (!isMobileFlashcardOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         closeMobileFlashcard();
@@ -127,10 +261,8 @@ export default function FlashcardDeck({
         moveMobile(1);
       }
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMobileFlashcardOpen, mobileCardIndex, visibleCards.length]);
@@ -246,7 +378,12 @@ export default function FlashcardDeck({
           </div>
           {visibleCards.length ? (
             visibleCards.map((card, index) => (
-              <button key={card.id} onClick={() => open(index)}>
+              <button
+                key={card.id}
+                type="button"
+                className={viewerIndex === index ? "active-question" : ""}
+                onClick={() => handleQuestionClick(index, false)}
+              >
                 <i>{String(index + 1).padStart(2, "0")}</i>
                 <span>
                   <b>{card.title}</b>
@@ -364,8 +501,8 @@ export default function FlashcardDeck({
                 key={card.id}
                 id={`mobile-question-item-${index}`}
                 type="button"
-                className="flashcard-question-item"
-                onClick={() => openMobileFlashcard(index)}
+                className={`flashcard-question-item ${mobileCardIndex === index ? "active-question" : ""}`}
+                onClick={() => handleQuestionClick(index, true)}
               >
                 <i>{String(index + 1).padStart(2, "0")}</i>
                 <span>

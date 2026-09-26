@@ -37,10 +37,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [refreshUser]);
 
-  const requireLogin = useCallback(async () => {
+  const requireLogin = useCallback(async (customReturnPath?: string) => {
     const currentUser = user ?? await refreshUser();
     if (currentUser) return true;
-    setReturnPath(`${window.location.pathname}${window.location.search}`);
+    setReturnPath(customReturnPath || `${window.location.pathname}${window.location.search}`);
     setLoginModalOpen(true);
     return false;
   }, [refreshUser, user]);
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousOverflow === "hidden" ? "" : previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [loginModalOpen]);

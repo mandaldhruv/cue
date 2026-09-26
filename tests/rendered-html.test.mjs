@@ -261,4 +261,41 @@ test("Subjects and Flashcards typography uses clean, normalized medium/normal we
   assert.match(enhancements, /@media\s*\(max-width:\s*768px\)\s*\{[\s\S]*\.subjects-explorer \.subject-card h3,\s*[\s\S]*\.real-deck-grid h2,\s*[\s\S]*font-weight:\s*500\s*!important/);
 });
 
+test("Flashcards login gating and mobile scrolling integrity", async () => {
+  const [flashcardDeck, page, authProvider, globals, enhancements] = await Promise.all([
+    source("app/flashcards/FlashcardDeck.tsx"),
+    source("app/flashcards/[slug]/page.tsx"),
+    source("app/auth/AuthProvider.tsx"),
+    source("app/globals.css"),
+    source("app/enhancements.css"),
+  ]);
+
+  // View Solution checks login before entering Flashcard Mode
+  assert.match(flashcardDeck, /handleQuestionClick/);
+  assert.match(flashcardDeck, /await requireLogin\(/);
+  assert.match(flashcardDeck, /search\.set\("open",\s*"1"\)/);
+
+  // Search parameters forwarded from page to FlashcardDeck
+  assert.match(page, /searchParams\?: Promise<\{/);
+  assert.match(page, /initialUnitId=\{resolvedSearchParams\.unit\}/);
+  assert.match(page, /initialTopicId=\{resolvedSearchParams\.topic\}/);
+  assert.match(page, /initialCardId=\{resolvedSearchParams\.card\}/);
+  assert.match(page, /initialAutoOpen=\{resolvedSearchParams\.open === "1"\}/);
+
+  // Return path customization supported in AuthProvider
+  assert.match(authProvider, /customReturnPath\?: string/);
+  assert.match(authProvider, /setReturnPath\(customReturnPath \|\|/);
+
+  // Login modal z-index guarantees overlay above fullscreen flashcard mode
+  assert.match(globals, /\.cue-auth-modal-backdrop\{[^}]*z-index:\s*1000000/);
+  assert.match(globals, /\.cue-auth-modal-dialog\{[^}]*z-index:\s*1000001/);
+
+  // Mobile / tablet scrolling enabled without height or overflow locks
+  assert.match(enhancements, /@media\(max-width:1024px\)\{[\s\S]*\.deck-player-section\{[^}]*overflow:visible!important/);
+  assert.match(enhancements, /@media\(max-width:900px\)\{[\s\S]*\.deck-player-section\{[^}]*overflow:visible!important/);
+  assert.match(enhancements, /\.flashcard-mobile-step-topics\{[^}]*overflow:visible!important/);
+  assert.match(enhancements, /\.flashcard-mobile-step-cards\{[^}]*overflow:visible!important/);
+});
+
+
 
