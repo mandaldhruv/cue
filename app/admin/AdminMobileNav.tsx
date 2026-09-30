@@ -31,9 +31,11 @@ export function AdminMobileNav({
 
       window.addEventListener("keydown", handleKeyDown);
       return () => {
-        document.body.style.overflow = originalOverflow;
+        document.body.style.overflow = originalOverflow || "";
         window.removeEventListener("keydown", handleKeyDown);
       };
+    } else {
+      document.body.style.overflow = "";
     }
   }, [isOpen]);
 

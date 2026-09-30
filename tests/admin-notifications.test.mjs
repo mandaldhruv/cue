@@ -7,181 +7,113 @@ async function source(relPath) {
   return fs.readFile(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("Admin Notifications Schema: table, deduplication, indexes, RLS, and RPC functions", async () => {
-  const migration = await source("migrations/20260925072418_admin-notifications.sql");
+async function fileExists(relPath) {
+  try {
+    await fs.access(path.join(process.cwd(), relPath));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-  // Required columns in admin_notifications
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.admin_notifications/);
-  assert.match(migration, /id uuid PRIMARY KEY/);
-  assert.match(migration, /type text NOT NULL/);
-  assert.match(migration, /title text NOT NULL/);
-  assert.match(migration, /message text NOT NULL/);
-  assert.match(migration, /category text NOT NULL/);
-  assert.match(migration, /priority text NOT NULL DEFAULT 'normal'/);
-  assert.match(migration, /link text NOT NULL/);
-  assert.match(migration, /related_id uuid/);
-  assert.match(migration, /is_read boolean NOT NULL DEFAULT false/);
-  assert.match(migration, /read_at timestamptz/);
-  assert.match(migration, /read_by uuid REFERENCES auth\.users/);
-  assert.match(migration, /created_at timestamptz NOT NULL DEFAULT now\(\)/);
-
-  // Deduplication index preventing duplicate notifications for same event
-  assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS admin_notifications_dedup_idx/);
-
-  // Row Level Security and admin authorization policies
-  assert.match(migration, /ALTER TABLE public\.admin_notifications ENABLE ROW LEVEL SECURITY/);
-  assert.match(migration, /REVOKE ALL ON TABLE public\.admin_notifications FROM anon, authenticated/);
-  assert.match(migration, /GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public\.admin_notifications TO authenticated/);
-  assert.match(migration, /public\.is_cue_admin\(\)/);
-
-  // RPC helper functions
-  assert.match(migration, /FUNCTION public\.record_admin_notification/);
-  assert.match(migration, /FUNCTION public\.get_admin_notification_counts/);
-  assert.match(migration, /FUNCTION public\.get_admin_notifications/);
-  assert.match(migration, /FUNCTION public\.mark_admin_notification_read/);
-  assert.match(migration, /FUNCTION public\.mark_all_admin_notifications_read/);
-  assert.match(migration, /FUNCTION public\.mark_category_admin_notifications_read/);
-});
-
-test("Admin Notification Triggers & Handlers: new member, new feedback, content issue, testimonial, pyq, study content", async () => {
-  const [migration, contentActions] = await Promise.all([
-    source("migrations/20260925072418_admin-notifications.sql"),
+test("Admin Notifications Removal: bell, badges, panels, triggers and routes completely removed", async () => {
+  const [adminShell, enhancements, contentActions] = await Promise.all([
+    source("app/admin/AdminShell.tsx"),
+    source("app/enhancements.css"),
     source("app/admin/content-actions.ts"),
   ]);
 
-  // A. New Member Trigger: triggers when student joins, skips admin accounts
-  assert.match(migration, /FUNCTION public\.notify_on_new_user\(\)/);
-  assert.match(migration, /'new_member'/);
-  assert.match(migration, /v_name \|\| ' joined as a Student'/);
-  assert.match(migration, /'members'/);
-  assert.match(migration, /trg_notify_new_user/);
+  // 1. AdminShell does not import or render notification components or providers
+  assert.doesNotMatch(adminShell, /AdminNotificationBell/);
+  assert.doesNotMatch(adminShell, /AdminNotificationProvider/);
+  assert.doesNotMatch(adminShell, /getAdminNotificationDataAction/);
+  assert.doesNotMatch(adminShell, /admin-mobile-bell/);
 
-  // B. New Feedback Trigger: standard student feedback
-  assert.match(migration, /FUNCTION public\.notify_on_new_feedback\(\)/);
-  assert.match(migration, /'new_feedback'/);
-  assert.match(migration, /submitted new feedback as a/);
-  assert.match(migration, /'feedback'/);
+  // 2. Mobile and desktop headers have clean "Live site ↗" actions without bells
+  assert.match(adminShell, /<div className="admin-mobile-actions">\s*<Link href="\/" target="_blank" aria-label="View live website">\s*Live site ↗\s*<\/Link>\s*<AdminMobileNav/s);
+  assert.match(adminShell, /<div className="admin-header-actions">\s*<Link href="\/" target="_blank" className="admin-live-link">\s*View live site ↗\s*<\/Link>\s*<\/div>/s);
 
-  // C. Content Issue Reported: high priority flag
-  assert.match(migration, /NEW\.is_content_issue IS TRUE/);
-  assert.match(migration, /'content_issue'/);
-  assert.match(migration, /'Content issue reported'/);
-  assert.match(migration, /reported an incorrect or outdated content issue/);
-  assert.match(migration, /'high'/);
+  // 3. Removed notification components, context, and API routes
+  assert.equal(await fileExists("app/admin/notifications/AdminNotificationBell.tsx"), false);
+  assert.equal(await fileExists("app/admin/notifications/AdminNotificationContext.tsx"), false);
+  assert.equal(await fileExists("app/admin/notifications/actions.ts"), false);
+  assert.equal(await fileExists("app/admin/notifications/types.ts"), false);
+  assert.equal(await fileExists("app/api/admin/notifications/route.ts"), false);
 
-  // D. Testimonial Published: triggers on publication
-  assert.match(migration, /FUNCTION public\.notify_on_testimonial_published\(\)/);
-  assert.match(migration, /'testimonial_published'/);
-  assert.match(migration, /Feedback from.*was published as a testimonial/);
+  // 4. Content actions do not fire in-app notification RPCs
+  assert.doesNotMatch(contentActions, /record_admin_notification/);
 
-  // E. PYQs: recorded on save and publish
-  assert.match(contentActions, /p_type:\s*"pyq_updated"/);
-  assert.match(contentActions, /p_category:\s*"pyqs"/);
-  assert.match(contentActions, /p_link:\s*"\/admin\/pyqs"/);
-
-  // F. Study Content: recorded on syllabus/flashcard save and publish
-  assert.match(contentActions, /p_type:\s*"content_updated"/);
-  assert.match(contentActions, /p_category:\s*"content"/);
+  // 5. CSS completely removed notification bells, badges, panels, and animations
+  assert.doesNotMatch(enhancements, /\.admin-notif-container/);
+  assert.doesNotMatch(enhancements, /\.admin-notif-trigger/);
+  assert.doesNotMatch(enhancements, /\.admin-notif-badge/);
+  assert.doesNotMatch(enhancements, /\.admin-notif-panel/);
+  assert.doesNotMatch(enhancements, /@keyframes adminBellGentleRing/);
+  assert.doesNotMatch(enhancements, /@keyframes cueBadgePop/);
+  assert.doesNotMatch(enhancements, /@keyframes cueNotifPanelSlide/);
+  assert.doesNotMatch(enhancements, /\.admin-mobile-bell/);
 });
 
-test("Dashboard Notification Button: positioned beside View Live Site with clean badge behavior", async () => {
-  const [adminShell, bell] = await Promise.all([
+test("Admin Responsive Drawer & Hamburger: tablet/iPad breakpoints (768px, 820px, 834px, 912px, 1024px, landscape)", async () => {
+  const [enhancements, mobileNav] = await Promise.all([
+    source("app/enhancements.css"),
+    source("app/admin/AdminMobileNav.tsx"),
+  ]);
+
+  // Desktop (>1200px): Fixed sidebar, hidden mobile header and hidden drawer
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*flex/);
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*none/);
+  assert.match(enhancements, /@media\(min-width:\s*(?:1025px|1201px)\)[\s\S]*?\.admin-mobile-drawer\s*\{[\s\S]*?display:\s*none/);
+
+  // Tablet & iPad Breakpoints (<=1200px or touch screens up to 1400px):
+  // Covers 768px, 820px, 834px, 912px, 1024px, and iPad landscape (1080px, 1180px, 1194px, 1366px)
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-sidebar\s*\{[\s\S]*?display:\s*none/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-mobile-header\s*\{[\s\S]*?display:\s*flex/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-workspace\s*\{[\s\S]*?width:\s*100%/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-mobile-drawer\s*\{[\s\S]*?display:\s*flex/);
+  assert.match(enhancements, /@media\(max-width:\s*(?:1024px|1200px)[\s\S]*?\.admin-drawer-backdrop\s*\{[\s\S]*?display:\s*block/);
+
+  // Hamburger button: clickable, touch-friendly, touch-action manipulation
+  assert.match(enhancements, /\.admin-mobile-hamburger\s*\{[^}]*touch-action:\s*manipulation/);
+  assert.match(enhancements, /\.admin-mobile-hamburger\s*\{[^}]*cursor:\s*pointer/);
+
+  // Drawer slide-out animation and closing isolation (does not block main page interactions)
+  assert.match(enhancements, /\.admin-mobile-drawer\s*\{[^}]*transform:\s*translateX\(-100%\)/);
+  assert.match(enhancements, /\.admin-mobile-drawer\s*\{[^}]*visibility:\s*hidden/);
+  assert.match(enhancements, /\.admin-mobile-drawer\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(enhancements, /\.admin-mobile-drawer\.open\s*\{[^}]*transform:\s*translateX\(0\)/);
+  assert.match(enhancements, /\.admin-mobile-drawer\.open\s*\{[^}]*visibility:\s*visible/);
+  assert.match(enhancements, /\.admin-mobile-drawer\.open\s*\{[^}]*pointer-events:\s*auto/);
+
+  // Drawer scrollable with touch gesture support
+  assert.match(enhancements, /\.admin-drawer-scroll\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(enhancements, /\.admin-drawer-scroll\s*\{[^}]*overscroll-behavior:\s*contain/);
+  assert.match(enhancements, /\.admin-drawer-scroll\s*\{[^}]*-webkit-overflow-scrolling:\s*touch/);
+  assert.match(enhancements, /\.admin-drawer-scroll\s*\{[^}]*touch-action:\s*pan-y/);
+
+  // Drawer backdrop: fixed overlay with backdrop click dismissal
+  assert.match(enhancements, /\.admin-drawer-backdrop\s*\{[^}]*position:\s*fixed/);
+  assert.match(mobileNav, /onClick=\{closeDrawer\}/);
+  assert.match(mobileNav, /document\.body\.style\.overflow\s*=\s*""/);
+});
+
+test("Admin Features Preservation: members, feedback, authentication, and access control intact", async () => {
+  const [adminShell, membersPage, feedbackPage, authLib] = await Promise.all([
     source("app/admin/AdminShell.tsx"),
-    source("app/admin/notifications/AdminNotificationBell.tsx"),
+    source("app/admin/members/page.tsx"),
+    source("app/admin/feedback/page.tsx"),
+    source("app/lib/admin-auth.ts"),
   ]);
 
-  // Placed beside "View live site ↗" in workspace header
-  assert.match(adminShell, /<div className="admin-header-actions">\s*<AdminNotificationBell \/>\s*<Link href="\/" target="_blank" className="admin-live-link">\s*View live site ↗/s);
+  // Preserves Members & Users and Feedback navigation
+  assert.match(adminShell, /\["\/admin\/members",\s*"MB",\s*"Members & Users"\]/);
+  assert.match(adminShell, /\["\/admin\/feedback",\s*"VO",\s*"Feedback & Testimonials"\]/);
 
-  // Placed beside "Live site ↗" in mobile header
-  assert.match(adminShell, /<div className="admin-mobile-actions">\s*<AdminNotificationBell className="admin-mobile-bell" \/>\s*<Link href="\/" target="_blank" aria-label="View live website">\s*Live site ↗/s);
+  // Pages enforce admin authorization
+  assert.match(membersPage, /requireAdminSession\(\)/);
+  assert.match(feedbackPage, /requireAdminSession\(\)/);
 
-  // Zero count rule: Badge must NOT render 0, must hide completely when zero
-  assert.match(bell, /\{unreadCount > 0 && \(\s*<span className="admin-notif-badge"/);
-  assert.match(bell, /unreadCount > 99 \? "99\+" : unreadCount/);
-});
-
-test("Notification Panel & Empty State: header, mark-all-read, item layout, and empty state", async () => {
-  const bell = await source("app/admin/notifications/AdminNotificationBell.tsx");
-
-  // Panel title & counter
-  assert.match(bell, /<h3>Notifications<\/h3>/);
-  assert.match(bell, /Mark all as read/);
-
-  // Empty state copy
-  assert.match(bell, /You(&apos;|')re all caught up\./);
-  assert.match(bell, /No new notifications right now\./);
-
-  // Relative time formatter
-  assert.match(bell, /function formatRelativeTime/);
-  assert.match(bell, /"Just now"/);
-
-  // Priority and Category Icons
-  assert.match(bell, /function NotificationIcon/);
-  assert.match(bell, /priority-high/);
-  assert.match(bell, /type-member/);
-  assert.match(bell, /type-feedback/);
-  assert.match(bell, /type-testimonial/);
-  assert.match(bell, /type-pyq/);
-  assert.match(bell, /type-content/);
-});
-
-test("Sidebar Navigation: clean labels, no member/feedback count badges or dots, context section auto-read", async () => {
-  const [sidebarNav, context] = await Promise.all([
-    source("app/admin/notifications/AdminSidebarNav.tsx"),
-    source("app/admin/notifications/AdminNotificationContext.tsx"),
-  ]);
-
-  // Sidebar navigation does NOT display count badges or red dots
-  assert.doesNotMatch(sidebarNav, /admin-sidebar-badge/);
-  assert.doesNotMatch(sidebarNav, /\{count > 0 &&/);
-
-  // Clean icon + label structure
-  assert.match(sidebarNav, /className="admin-nav-icon">\{icon\}<\/span>/);
-  assert.match(sidebarNav, /className="admin-sidebar-label">\{label\}<\/span>/);
-
-  // Context auto-marks category notifications as read when opening section
-  assert.match(context, /function routeToCategory/);
-  assert.match(context, /if \(category && counts\[category\] > 0\) \{\s*markCategoryRead\(category\);/);
-});
-
-test("Security & Authorization: API route and actions strictly protect admin notifications", async () => {
-  const [apiRoute, actions] = await Promise.all([
-    source("app/api/admin/notifications/route.ts"),
-    source("app/admin/notifications/actions.ts"),
-  ]);
-
-  // API route requires getAdminSession
-  assert.match(apiRoute, /getAdminSession\(\)/);
-  assert.match(apiRoute, /if \(!session\.user \|\| !session\.isAdmin\)/);
-  assert.match(apiRoute, /status: 401/);
-
-  // Server actions require admin context
-  assert.match(actions, /async function adminContext\(\)/);
-  assert.match(actions, /const session = await getAdminSession\(\);/);
-  assert.match(actions, /if \(!session\.user \|\| !session\.isAdmin\) return null;/);
-});
-
-test("Responsive Styling & Animation: CSS guarantees fit inside viewport without horizontal overflow", async () => {
-  const enhancements = await source("app/enhancements.css");
-
-  // Notification container and button
-  assert.match(enhancements, /\.admin-notif-container/);
-  assert.match(enhancements, /\.admin-notif-trigger/);
-
-  // Badge pop animation
-  assert.match(enhancements, /\.admin-notif-badge/);
-  assert.match(enhancements, /@keyframes cueBadgePop/);
-
-  // Sidebar badge styling
-  assert.match(enhancements, /\.admin-sidebar-badge/);
-
-  // Popover panel animation & containment
-  assert.match(enhancements, /\.admin-notif-panel/);
-  assert.match(enhancements, /@keyframes cueNotifPanelSlide/);
-
-  // Mobile / tablet safe margins
-  assert.match(enhancements, /@media\s*\(max-width:\s*760px\)\s*\{[^}]*\.admin-notif-panel\s*\{[^}]*position:\s*fixed/);
-  assert.match(enhancements, /@media\s*\(max-width:\s*760px\)\s*\{[^}]*\.admin-notif-panel\s*\{[^}]*left:\s*14px/);
-  assert.match(enhancements, /@media\s*\(max-width:\s*760px\)\s*\{[^}]*\.admin-notif-panel\s*\{[^}]*right:\s*14px/);
+  // Auth enforcement remains strict
+  assert.match(authLib, /AUTHORIZED_ADMIN_EMAILS/);
+  assert.match(authLib, /isAuthorizedAdminEmail/);
 });
