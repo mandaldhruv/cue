@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "../components";
 import { adminSignOut } from "./actions";
-import { AdminSidebarNav, type NavGroup } from "./notifications/AdminSidebarNav";
+import { AdminSidebarNav, type NavGroup } from "./AdminSidebarNav";
 import { AdminMobileNav } from "./AdminMobileNav";
 
 const groups: NavGroup[] = [

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Logo } from "../components";
-import { AdminSidebarNav, type NavGroup } from "./notifications/AdminSidebarNav";
+import { AdminSidebarNav, type NavGroup } from "./AdminSidebarNav";
 
 export function AdminMobileNav({
   email,

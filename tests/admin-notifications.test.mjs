@@ -28,12 +28,14 @@ test("Admin Notifications Removal: bell, badges, panels, triggers and routes com
   assert.doesNotMatch(adminShell, /AdminNotificationProvider/);
   assert.doesNotMatch(adminShell, /getAdminNotificationDataAction/);
   assert.doesNotMatch(adminShell, /admin-mobile-bell/);
+  assert.doesNotMatch(adminShell, /notifications/);
 
   // 2. Mobile and desktop headers have clean "Live site ↗" actions without bells
   assert.match(adminShell, /<div className="admin-mobile-actions">\s*<Link href="\/" target="_blank" aria-label="View live website">\s*Live site ↗\s*<\/Link>\s*<AdminMobileNav/s);
   assert.match(adminShell, /<div className="admin-header-actions">\s*<Link href="\/" target="_blank" className="admin-live-link">\s*View live site ↗\s*<\/Link>\s*<\/div>/s);
 
-  // 3. Removed notification components, context, and API routes
+  // 3. Removed notification components, context, and API routes (entire directory purged)
+  assert.equal(await fileExists("app/admin/notifications"), false);
   assert.equal(await fileExists("app/admin/notifications/AdminNotificationBell.tsx"), false);
   assert.equal(await fileExists("app/admin/notifications/AdminNotificationContext.tsx"), false);
   assert.equal(await fileExists("app/admin/notifications/actions.ts"), false);
@@ -43,7 +45,8 @@ test("Admin Notifications Removal: bell, badges, panels, triggers and routes com
   // 4. Content actions do not fire in-app notification RPCs
   assert.doesNotMatch(contentActions, /record_admin_notification/);
 
-  // 5. CSS completely removed notification bells, badges, panels, and animations
+  // 5. CSS completely removed notification bells, badges, panels, comments, and animations
+  assert.doesNotMatch(enhancements, /Admin Notification/);
   assert.doesNotMatch(enhancements, /\.admin-notif-container/);
   assert.doesNotMatch(enhancements, /\.admin-notif-trigger/);
   assert.doesNotMatch(enhancements, /\.admin-notif-badge/);

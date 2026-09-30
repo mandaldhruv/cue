@@ -10,7 +10,7 @@ async function source(relPath) {
 test("Admin Sidebar: original elegant structure and clean navigation hierarchy", async () => {
   const [adminShell, sidebarNav] = await Promise.all([
     source("app/admin/AdminShell.tsx"),
-    source("app/admin/notifications/AdminSidebarNav.tsx"),
+    source("app/admin/AdminSidebarNav.tsx"),
   ]);
 
   // Original groups preserved
