@@ -270,8 +270,9 @@
 
 /* ==========================================================================
    Admin Layout & Responsive Breakpoints
-   - Desktop (> 1024px): Fixed permanent sidebar on left, independent scrolling
-   - Mobile & Tablet (<= 1024px): Full-width content, header hamburger + slide-in drawer
+   - Desktop / Laptop: Fixed permanent sidebar on left, independent scrolling
+   - Mobile, Tablet & iPad (All sizes: Mini, Air, Pro 11, Pro 13): 
+     Full-width content, sticky header with hamburger + slide-in drawer
    ========================================================================== */
 
 /* Slide-out Drawer & Overlay Styles */
@@ -407,8 +408,11 @@
   }
 }
 
-/* Tablet, iPad & Mobile Devices (<= 1200px or touch screens like iPad Pro up to 1400px) */
-@media(max-width: 1200px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+/* Tablet, iPad & Mobile Devices (All iPads: Mini, Air, Pro 11, Pro 13 in portrait & landscape, and tablets up to 1366px) */
+@media(max-width: 1200px), 
+      (max-width: 1366px) and (max-aspect-ratio: 145/100), 
+      (max-width: 1366px) and (min-height: 950px),
+      (any-pointer: coarse) and (max-width: 1400px) and (max-aspect-ratio: 165/100) {
   .admin-sidebar {
     display: none !important;
   }
@@ -707,7 +711,10 @@
 }
 
 /* Tablet/iPad & Mobile: 2-column grid, compact height, balanced 5th card */
-@media(max-width: 1024px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media(max-width: 1200px), 
+      (max-width: 1366px) and (max-aspect-ratio: 145/100), 
+      (max-width: 1366px) and (min-height: 950px),
+      (any-pointer: coarse) and (max-width: 1400px) and (max-aspect-ratio: 165/100) {
   .admin-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 12px !important;
@@ -3005,7 +3012,10 @@
 }
 
 /* Tablet/iPad & Mobile: compact 2-column grid for member metrics */
-@media(max-width: 1024px), (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+@media(max-width: 1200px), 
+      (max-width: 1366px) and (max-aspect-ratio: 145/100), 
+      (max-width: 1366px) and (min-height: 950px),
+      (any-pointer: coarse) and (max-width: 1400px) and (max-aspect-ratio: 165/100) {
   .members-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 12px !important;

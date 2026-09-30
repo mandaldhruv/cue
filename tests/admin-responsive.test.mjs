@@ -82,3 +82,57 @@ test("Members & Users: summary cards use compact 2-column layout on mobile/table
   assert.match(enhancements, /\.members-stat-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.doesNotMatch(enhancements, /@media\(max-width:\s*760px\)\s*\{[^}]*\.members-stat-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
 });
+
+test("Admin Responsive Modes: Consistent drawer on Mobile & ALL iPads (Mini, Air, Pro 11, Pro 13), permanent sidebar on Desktop/Laptop", async () => {
+  const enhancements = await source("app/enhancements.css");
+
+  // Verify the exact tablet media query is declared in CSS
+  assert.match(
+    enhancements,
+    /@media\s*\(\s*max-width:\s*1200px\s*\)\s*,\s*\(\s*max-width:\s*1366px\s*\)\s*and\s*\(\s*max-aspect-ratio:\s*145\/100\s*\)\s*,\s*\(\s*max-width:\s*1366px\s*\)\s*and\s*\(\s*min-height:\s*950px\s*\)/
+  );
+
+  const viewports = [
+    // Mobile Viewports (Drawer)
+    { name: "Mobile 320x568", w: 320, h: 568, expected: "drawer" },
+    { name: "Mobile 375x812", w: 375, h: 812, expected: "drawer" },
+    { name: "Mobile 390x844", w: 390, h: 844, expected: "drawer" },
+    { name: "Mobile 414x896", w: 414, h: 896, expected: "drawer" },
+
+    // iPad / Tablet Portrait Viewports (Drawer)
+    { name: "iPad Mini Portrait 768x1024", w: 768, h: 1024, expected: "drawer" },
+    { name: "iPad Air Portrait 820x1180", w: 820, h: 1180, expected: "drawer" },
+    { name: "iPad Pro 11 Portrait 834x1194", w: 834, h: 1194, expected: "drawer" },
+    { name: "iPad Pro 13 Portrait 1024x1366", w: 1024, h: 1366, expected: "drawer" },
+
+    // iPad / Tablet Landscape Viewports (Drawer)
+    { name: "iPad Mini Landscape 1024x768", w: 1024, h: 768, expected: "drawer" },
+    { name: "iPad Air Landscape 1180x820", w: 1180, h: 820, expected: "drawer" },
+    { name: "iPad Pro 11 Landscape 1194x834", w: 1194, h: 834, expected: "drawer" },
+    { name: "iPad Pro 13 Landscape 1366x1024", w: 1366, h: 1024, expected: "drawer" },
+
+    // Desktop / Laptop Viewports (Permanent sidebar)
+    { name: "Desktop/Laptop 1280x720", w: 1280, h: 720, expected: "desktop" },
+    { name: "Desktop/Laptop 1366x768", w: 1366, h: 768, expected: "desktop" },
+    { name: "Desktop/Laptop 1440x900", w: 1440, h: 900, expected: "desktop" },
+    { name: "Desktop/Laptop 1920x1080", w: 1920, h: 1080, expected: "desktop" },
+  ];
+
+  function evaluateMode(w, h, touch = false) {
+    const isTabletOrMobile =
+      w <= 1200 ||
+      (w <= 1366 && w / h <= 1.45) ||
+      (w <= 1366 && h >= 950) ||
+      (touch && w <= 1400 && w / h <= 1.65);
+    return isTabletOrMobile ? "drawer" : "desktop";
+  }
+
+  for (const vp of viewports) {
+    const mode = evaluateMode(vp.w, vp.h);
+    assert.equal(
+      mode,
+      vp.expected,
+      `${vp.name} (${vp.w}x${vp.h}) should resolve to ${vp.expected} mode, got ${mode}`
+    );
+  }
+});
