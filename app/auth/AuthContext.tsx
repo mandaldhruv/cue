@@ -16,10 +16,17 @@ export type AuthContextValue = {
   closeLoginModal: () => void;
 };
 
-export const AuthContext = createContext<AuthContextValue | null>(null);
+const defaultAuthContext: AuthContextValue = {
+  user: null,
+  loading: false,
+  refreshUser: async () => null,
+  requireLogin: async () => false,
+  closeLoginModal: () => {},
+};
+
+export const AuthContext = createContext<AuthContextValue>(defaultAuthContext);
 
 export function useAuth() {
   const value = useContext(AuthContext);
-  if (!value) throw new Error("useAuth must be used inside AuthProvider.");
-  return value;
+  return value ?? defaultAuthContext;
 }
