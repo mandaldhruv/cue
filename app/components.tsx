@@ -10,7 +10,22 @@ import { signOutAction } from "./login/actions";
 export function Logo() {
   return (
     <Link className="logo" href="/" aria-label="Cue home">
-      <Image className="cue-original-wordmark" src="/cue-wordmark-original-clean.png" alt="" width={685} height={266} priority />
+      <Image
+        className="cue-original-wordmark cue-logo-dark"
+        src="/cue-logo-transparent.png"
+        alt="Cue"
+        width={1184}
+        height={435}
+        priority
+      />
+      <Image
+        className="cue-original-wordmark cue-logo-light"
+        src="/cue-logo-white.png"
+        alt="Cue"
+        width={1184}
+        height={435}
+        priority
+      />
       <strong className="sr-only">Cue</strong>
     </Link>
   );
