@@ -8,10 +8,11 @@ async function source(path) {
 }
 
 test("Test 1-5: authorized admin emails are strictly enforced", () => {
-  // Exactly the two authorized admin emails
+  // Authorized admin emails
   assert.deepEqual([...AUTHORIZED_ADMIN_EMAILS].sort(), [
     "harshita301doc@gmail.com",
     "hersita04@gmail.com",
+    "mndaldhruv14@gmail.com",
   ]);
 
   // Test 4: hersita04@gmail.com authenticated
@@ -23,6 +24,11 @@ test("Test 1-5: authorized admin emails are strictly enforced", () => {
   assert.equal(isAuthorizedAdminEmail("harshita301doc@gmail.com"), true);
   assert.equal(isAuthorizedAdminEmail("HARSHITA301DOC@GMAIL.COM"), true);
   assert.equal(isAuthorizedAdminEmail(" harshita301doc@gmail.com "), true);
+
+  // Test: mndaldhruv14@gmail.com authenticated
+  assert.equal(isAuthorizedAdminEmail("mndaldhruv14@gmail.com"), true);
+  assert.equal(isAuthorizedAdminEmail("MNDALDRUV14@GMAIL.COM".replace("DRUV", "DHRUV")), true);
+  assert.equal(isAuthorizedAdminEmail(" mndaldhruv14@gmail.com "), true);
 
   // Test 2 & 3: Student account / random email / other emails denied
   assert.equal(isAuthorizedAdminEmail("student@gmail.com"), false);
