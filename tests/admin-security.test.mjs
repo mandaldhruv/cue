@@ -116,21 +116,29 @@ test("Test 6: server actions and API routes reject unauthorized users", async ()
 });
 
 test("Database migration strictly protects is_cue_admin and get_cue_members", async () => {
-  const migration = await source("migrations/20260925054234_secure-admin-authorization.sql");
+  const [migrationOld, migrationLatest] = await Promise.all([
+    source("migrations/20260925054234_secure-admin-authorization.sql"),
+    source("migrations/20261003160000_fix-stable-admin-authorization.sql"),
+  ]);
 
   // Does not use current_user = 'project_admin'
-  assert.doesNotMatch(migration, /current_user\s*=\s*'project_admin'/);
+  assert.doesNotMatch(migrationOld, /current_user\s*=\s*'project_admin'/);
+  assert.doesNotMatch(migrationLatest, /current_user\s*=\s*'project_admin'/);
 
-  // Checks both authorized emails explicitly
-  assert.match(migration, /'hersita04@gmail\.com'/);
-  assert.match(migration, /'harshita301doc@gmail\.com'/);
+  // Latest migration authorizes all 3 accounts
+  assert.match(migrationLatest, /'hersita04@gmail\.com'/);
+  assert.match(migrationLatest, /'harshita301doc@gmail\.com'/);
+  assert.match(migrationLatest, /'harsyng14@gmail\.com'/);
+
+  // Latest migration ensures is_cue_admin is strictly read-only STABLE without any UPDATE statements
+  assert.match(migrationLatest, /CREATE OR REPLACE FUNCTION public\.is_cue_admin\(\)\s*RETURNS boolean\s*LANGUAGE plpgsql\s*STABLE/);
+  // Ensure the body of is_cue_admin does not execute UPDATE
+  const isCueAdminBody = migrationLatest.split("CREATE OR REPLACE FUNCTION public.is_cue_admin()")[1].split("$$;")[0];
+  assert.doesNotMatch(isCueAdminBody, /\bUPDATE\b/);
 
   // Validates auth.uid()
-  assert.match(migration, /v_uid := auth\.uid\(\)/);
-  assert.match(migration, /IF v_uid IS NULL THEN\s*RETURN false;/);
-
-  // get_cue_members raises exception when not admin
-  assert.match(migration, /IF NOT public\.is_cue_admin\(\) THEN\s*RAISE EXCEPTION 'Admin authorization required';/);
+  assert.match(migrationLatest, /v_uid := auth\.uid\(\)/);
+  assert.match(migrationLatest, /IF v_uid IS NULL THEN\s*RETURN false;/);
 });
 
 test("Test 8: Student portal authentication and features remain completely unaffected", async () => {

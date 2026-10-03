@@ -111,9 +111,10 @@ test("Admin Authorization & Protection: strict enforcement of authorized admins"
     source("migrations/20260925054234_secure-admin-authorization.sql"),
   ]);
 
-  // Authorized emails are strictly hersita04@gmail.com and harshita301doc@gmail.com
+  // Authorized emails are strictly hersita04@gmail.com, harshita301doc@gmail.com, and harsyng14@gmail.com
   assert.match(authHelper, /hersita04@gmail\.com/);
   assert.match(authHelper, /harshita301doc@gmail\.com/);
+  assert.match(authHelper, /harsyng14@gmail\.com/);
   assert.match(rlsMigration, /hersita04@gmail\.com/);
   assert.match(rlsMigration, /harshita301doc@gmail\.com/);
 });
