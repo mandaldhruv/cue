@@ -11,8 +11,8 @@ test("Test 1-5: authorized admin emails are strictly enforced", () => {
   // Authorized admin emails
   assert.deepEqual([...AUTHORIZED_ADMIN_EMAILS].sort(), [
     "harshita301doc@gmail.com",
+    "harsyng14@gmail.com",
     "hersita04@gmail.com",
-    "mndaldhruv14@gmail.com",
   ]);
 
   // Test 4: hersita04@gmail.com authenticated
@@ -25,16 +25,17 @@ test("Test 1-5: authorized admin emails are strictly enforced", () => {
   assert.equal(isAuthorizedAdminEmail("HARSHITA301DOC@GMAIL.COM"), true);
   assert.equal(isAuthorizedAdminEmail(" harshita301doc@gmail.com "), true);
 
-  // Test: mndaldhruv14@gmail.com authenticated
-  assert.equal(isAuthorizedAdminEmail("mndaldhruv14@gmail.com"), true);
-  assert.equal(isAuthorizedAdminEmail("MNDALDRUV14@GMAIL.COM".replace("DRUV", "DHRUV")), true);
-  assert.equal(isAuthorizedAdminEmail(" mndaldhruv14@gmail.com "), true);
+  // Test: harsyng14@gmail.com authenticated
+  assert.equal(isAuthorizedAdminEmail("harsyng14@gmail.com"), true);
+  assert.equal(isAuthorizedAdminEmail("HARSYNG14@GMAIL.COM"), true);
+  assert.equal(isAuthorizedAdminEmail(" harsyng14@gmail.com "), true);
 
-  // Test 2 & 3: Student account / random email / other emails denied
+  // Test 2 & 3: Student account / random email / removed accounts denied
+  assert.equal(isAuthorizedAdminEmail("mndaldhruv14@gmail.com"), false);
   assert.equal(isAuthorizedAdminEmail("student@gmail.com"), false);
   assert.equal(isAuthorizedAdminEmail("random@gmail.com"), false);
   assert.equal(isAuthorizedAdminEmail("test@gmail.com"), false);
-  assert.equal(isAuthorizedAdminEmail("harsyng14@gmail.com"), false);
+  assert.equal(isAuthorizedAdminEmail("unauthorized@gmail.com"), false);
   assert.equal(isAuthorizedAdminEmail("mandal.dhruv@dypic.in"), false);
   assert.equal(isAuthorizedAdminEmail("admin@cue.study"), false);
   assert.equal(isAuthorizedAdminEmail(""), false);
