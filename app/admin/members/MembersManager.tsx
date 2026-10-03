@@ -73,7 +73,7 @@ function isWithinDays(dateStr: string, days: number) {
 
 export default function MembersManager({ members }: { members: MemberRecord[] }) {
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("student");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<"newest" | "oldest" | "name" | "active" | "study_time">("newest");
 

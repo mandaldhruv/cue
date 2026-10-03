@@ -122,3 +122,24 @@ test("Member Activity Detail Modal: provides rich session drilldown for administ
   assert.match(enhancements, /\.member-detail-stats\s*\{/);
   assert.match(enhancements, /\.member-sessions-list\s*\{/);
 });
+
+test("Members & Users: Role filter defaults to Students while preserving all dropdown options", async () => {
+  const membersManager = await source("app/admin/members/MembersManager.tsx");
+
+  // 1. Role filter state initializes to "student" by default
+  assert.match(membersManager, /const\s*\[roleFilter,\s*setRoleFilter\]\s*=\s*useState<string>\("student"\);/);
+
+  // 2. All 3 role options preserved in exact order
+  assert.match(membersManager, /<option value="all">All Roles<\/option>/);
+  assert.match(membersManager, /<option value="student">Students<\/option>/);
+  assert.match(membersManager, /<option value="admin">Administrators<\/option>/);
+
+  // 3. Status filter options preserved
+  assert.match(membersManager, /<option value="all">All Status<\/option>/);
+  assert.match(membersManager, /<option value="verified">Verified only<\/option>/);
+  assert.match(membersManager, /<option value="unverified">Pending only<\/option>/);
+
+  // 4. Role filter logic strictly distinguishes student vs admin
+  assert.match(membersManager, /roleFilter === "admin" && !isRoleAdmin/);
+  assert.match(membersManager, /roleFilter === "student" && isRoleAdmin/);
+});
