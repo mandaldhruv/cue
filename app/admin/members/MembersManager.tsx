@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { MemberRecord } from "../types";
+import { useEffect, useMemo, useState } from "react";
+import type { MemberRecord, UserSessionRecord } from "../types";
 
 function initials(name: string) {
   if (!name) return "CU";
@@ -23,6 +23,30 @@ function formatIst(value: string | null) {
     minute: "2-digit",
     hour12: true,
   }).format(date);
+}
+
+function formatSessionTime(value: string | null) {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
+function formatStudyTime(secondsInput?: number | string | null) {
+  const seconds = Number(secondsInput || 0);
+  if (!seconds || seconds <= 0) return "0m";
+  if (seconds < 60) return "< 1m";
+  const totalMinutes = Math.floor(seconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
 }
 
 function timeAgo(value: string | null) {
@@ -51,7 +75,47 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortKey, setSortKey] = useState<"newest" | "oldest" | "name" | "active">("newest");
+  const [sortKey, setSortKey] = useState<"newest" | "oldest" | "name" | "active" | "study_time">("newest");
+
+  // Selected member for detail modal
+  const [selectedMember, setSelectedMember] = useState<MemberRecord | null>(null);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<UserSessionRecord[]>([]);
+
+  // Load sessions when a member is selected
+  useEffect(() => {
+    if (!selectedMember) {
+      setRecentSessions([]);
+      return;
+    }
+
+    let isMounted = true;
+    setSessionsLoading(true);
+
+    fetch(`/api/admin/members/${selectedMember.id}/activity`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to load"))))
+      .then((data) => {
+        if (isMounted) {
+          setRecentSessions(data.sessions || []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setRecentSessions([]);
+      })
+      .finally(() => {
+        if (isMounted) setSessionsLoading(false);
+      });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedMember(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedMember]);
 
   // Metrics
   const totalCount = members.length;
@@ -60,7 +124,7 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
   const verifiedCount = useMemo(() => members.filter((m) => m.email_verified).length, [members]);
   const activeRecentCount = useMemo(() => {
     return members.filter((m) => {
-      const activeTime = m.last_seen || m.updated_at || m.created_at;
+      const activeTime = m.last_seen || m.created_at;
       return isWithinDays(activeTime, 7);
     }).length;
   }, [members]);
@@ -94,9 +158,14 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
         if (sortKey === "name") {
           return a.name.localeCompare(b.name);
         }
+        if (sortKey === "study_time") {
+          const aSeconds = Number(a.total_study_seconds || 0);
+          const bSeconds = Number(b.total_study_seconds || 0);
+          return bSeconds - aSeconds;
+        }
         if (sortKey === "active") {
-          const aTime = new Date(a.last_seen || a.updated_at || a.created_at).getTime();
-          const bTime = new Date(b.last_seen || b.updated_at || b.created_at).getTime();
+          const aTime = new Date(a.last_seen || a.created_at).getTime();
+          const bTime = new Date(b.last_seen || b.created_at).getTime();
           return bTime - aTime;
         }
         return 0;
@@ -184,6 +253,7 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)}>
               <option value="newest">Newest first</option>
               <option value="active">Recently active</option>
+              <option value="study_time">Most study time</option>
               <option value="name">Name A-Z</option>
               <option value="oldest">Oldest first</option>
             </select>
@@ -200,7 +270,7 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
           <span>MEMBER</span>
           <span>EMAIL</span>
           <span>ROLE</span>
-          <span>ACCOUNT STATUS</span>
+          <span>STUDY TIME</span>
           <span>REGISTRATION DATE</span>
           <span>LAST ACTIVE</span>
         </div>
@@ -210,10 +280,24 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
             const isRecent = isWithinDays(member.created_at, 7);
             const isToday = isWithinHours(member.created_at, 24);
             const isAdmin = member.role.toLowerCase().includes("admin");
-            const lastActiveTime = member.last_seen || member.updated_at || member.created_at;
+            const lastActiveTime = member.last_seen || member.created_at;
+            const studySeconds = Number(member.total_study_seconds || 0);
 
             return (
-              <div className={`members-table-row ${isRecent ? "is-new-member" : ""}`} key={member.id}>
+              <div
+                className={`members-table-row clickable-row ${isRecent ? "is-new-member" : ""}`}
+                key={member.id}
+                onClick={() => setSelectedMember(member)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedMember(member);
+                  }
+                }}
+                aria-label={`View activity for ${member.name}`}
+              >
                 {/* Column 1: Member Name & Avatar */}
                 <div className="members-col-name">
                   <span className={`members-avatar ${isAdmin ? "avatar-admin" : ""}`}>
@@ -241,11 +325,15 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
                   </span>
                 </div>
 
-                {/* Column 4: Account Status */}
-                <div className="members-col-status">
-                  <span className={`members-status-pill ${member.email_verified ? "status-verified" : "status-pending"}`}>
-                    <i className="status-dot" aria-hidden="true" />
-                    {member.email_verified ? "Verified" : "Pending verification"}
+                {/* Column 4: Study Time (Replaces Account Status) */}
+                <div className="members-col-study-time">
+                  <span className="members-mobile-label">STUDY TIME</span>
+                  <span className={`members-study-pill ${studySeconds > 0 ? "has-time" : "zero-time"}`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <b>{formatStudyTime(studySeconds)}</b>
                   </span>
                 </div>
 
@@ -259,8 +347,8 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
 
                   <div className="members-col-active">
                     <span className="members-mobile-label">LAST ACTIVE</span>
-                    <b>{member.last_seen ? formatIst(member.last_seen) : formatIst(lastActiveTime)}</b>
-                    <small>{timeAgo(member.last_seen || lastActiveTime)}</small>
+                    <b>{formatIst(lastActiveTime)}</b>
+                    <small>{timeAgo(lastActiveTime)}</small>
                   </div>
                 </div>
               </div>
@@ -273,6 +361,115 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
           </div>
         )}
       </div>
+
+      {/* Member Activity Detail Modal (Requirement 11) */}
+      {selectedMember && (
+        <div className="member-detail-backdrop" role="presentation" onClick={() => setSelectedMember(null)}>
+          <div
+            className="member-detail-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="member-detail-name"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="member-detail-head">
+              <div className="member-detail-profile">
+                <span className={`members-avatar large ${selectedMember.role.toLowerCase().includes("admin") ? "avatar-admin" : ""}`}>
+                  {initials(selectedMember.name)}
+                </span>
+                <div>
+                  <h2 id="member-detail-name">{selectedMember.name}</h2>
+                  <p>{selectedMember.email}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="member-detail-close"
+                onClick={() => setSelectedMember(null)}
+                aria-label="Close activity detail"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Key Usage Metrics */}
+            <div className="member-detail-stats">
+              <div className="member-stat-box">
+                <span>TOTAL STUDY TIME</span>
+                <b>{formatStudyTime(selectedMember.total_study_seconds)}</b>
+                <small>Confirmed active time</small>
+              </div>
+              <div className="member-stat-box">
+                <span>TOTAL SESSIONS</span>
+                <b>{selectedMember.session_count ?? 0}</b>
+                <small>Recorded study visits</small>
+              </div>
+              <div className="member-stat-box">
+                <span>AVG. SESSION</span>
+                <b>
+                  {selectedMember.session_count && Number(selectedMember.session_count) > 0
+                    ? formatStudyTime(Math.round(Number(selectedMember.total_study_seconds || 0) / Number(selectedMember.session_count)))
+                    : "0m"}
+                </b>
+                <small>Per active session</small>
+              </div>
+              <div className="member-stat-box">
+                <span>LAST CONFIRMED ACTIVE</span>
+                <b>{timeAgo(selectedMember.last_seen || selectedMember.created_at)}</b>
+                <small>{formatIst(selectedMember.last_seen || selectedMember.created_at)}</small>
+              </div>
+            </div>
+
+            {/* Recent Sessions List */}
+            <div className="member-sessions-section">
+              <div className="member-sessions-header">
+                <h3>Recent Study Sessions</h3>
+                <span>{recentSessions.length} recorded</span>
+              </div>
+
+              {sessionsLoading ? (
+                <div className="member-sessions-loading">Loading activity history…</div>
+              ) : recentSessions.length > 0 ? (
+                <div className="member-sessions-list">
+                  {recentSessions.map((session) => {
+                    const sessionDate = formatIst(session.started_at);
+                    const startTime = formatSessionTime(session.started_at);
+                    const endTime = formatSessionTime(session.last_heartbeat_at || session.ended_at);
+
+                    return (
+                      <div className="member-session-item" key={session.id}>
+                        <div className="member-session-icon" aria-hidden="true">
+                          {session.is_active ? "●" : "✓"}
+                        </div>
+                        <div className="member-session-info">
+                          <div className="member-session-time">
+                            <b>{sessionDate.split(",")[0]}</b>
+                            <span>{startTime} → {endTime}</span>
+                          </div>
+                          <div className="member-session-page">
+                            {session.resource_type ? (
+                              <span className="session-resource-tag">{session.resource_type}</span>
+                            ) : null}
+                            <code>{session.page_path || "/"}</code>
+                          </div>
+                        </div>
+                        <div className="member-session-duration">
+                          <b>{formatStudyTime(session.duration_seconds)}</b>
+                          {session.is_active ? <span className="session-active-pill">ACTIVE</span> : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="member-sessions-empty">
+                  No recorded study sessions for this member yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

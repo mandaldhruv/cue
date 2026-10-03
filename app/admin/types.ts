@@ -127,4 +127,18 @@ export type MemberRecord = {
   created_at: string;
   updated_at: string;
   last_seen: string | null;
+  total_study_seconds?: number | string | null;
+  session_count?: number | string | null;
+};
+
+export type UserSessionRecord = {
+  id: string;
+  started_at: string;
+  last_heartbeat_at: string;
+  ended_at: string;
+  duration_seconds: number;
+  is_active: boolean;
+  page_path: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
 };

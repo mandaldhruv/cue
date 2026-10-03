@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LoginPanel from "../login/LoginPanel";
 import { AuthContext, type CueUser } from "./AuthContext";
+import { ActivityTracker } from "./ActivityTracker";
 
 export { useAuth } from "./AuthContext";
 export type { CueUser } from "./AuthContext";
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ user, loading, refreshUser, requireLogin, closeLoginModal }), [closeLoginModal, loading, refreshUser, requireLogin, user]);
   return <AuthContext.Provider value={value}>
+    <ActivityTracker />
     {children}
     {loginModalOpen && <div className="cue-auth-modal-backdrop" role="presentation" onMouseDown={closeLoginModal}>
       <div className="cue-auth-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cue-auth-modal-title" onMouseDown={(event) => event.stopPropagation()}>
