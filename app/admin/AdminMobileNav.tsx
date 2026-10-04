@@ -109,8 +109,18 @@ export function AdminMobileNav({
         <div className="admin-drawer-scroll">
           <AdminSidebarNav groups={groups} active={active} onNavigate={closeDrawer} />
           <div className="admin-drawer-foot">
-            <small>SIGNED IN AS</small>
-            <b>{email}</b>
+            <div className="admin-user-profile">
+              <div className="admin-user-avatar" aria-hidden="true">
+                <span>{email ? email.charAt(0).toUpperCase() : "A"}</span>
+              </div>
+              <div className="admin-user-details">
+                <div className="admin-user-meta">
+                  <span className="admin-user-role">Admin</span>
+                  <small>SIGNED IN AS</small>
+                </div>
+                <b>{email}</b>
+              </div>
+            </div>
             <form action={signOutAction}>
               <button type="submit">Sign out</button>
             </form>
