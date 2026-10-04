@@ -20,7 +20,7 @@ export default async function AdminShell({
 }: {
   active: string;
   email: string;
-  eyebrow: string;
+  eyebrow?: string;
   title: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -59,7 +59,7 @@ export default async function AdminShell({
       <section className="admin-workspace">
         <header>
           <div>
-            <span>{eyebrow}</span>
+            {eyebrow ? <span>{eyebrow}</span> : null}
             <h1>{title}</h1>
           </div>
           <div className="admin-header-actions">

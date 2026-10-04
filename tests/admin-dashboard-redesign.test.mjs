@@ -7,7 +7,7 @@ async function source(relPath) {
   return fs.readFile(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("Admin Dashboard Redesign: Top Greeting Hero with dynamic greeting and minimal academic books visual", async () => {
+test("Admin Dashboard Redesign: Top Greeting Hero with dynamic greeting, removed extra desc, and visible books visual", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
@@ -24,19 +24,25 @@ test("Admin Dashboard Redesign: Top Greeting Hero with dynamic greeting and mini
   assert.match(dashboardPage, /#1e293b/); // Navy book
   assert.match(dashboardPage, /#f59e0b/); // Amber book
 
-  // Hero banner CSS: rounded container, soft cool gradient, generous padding
+  // Hero banner CSS: rounded container, soft horizontal gradient, generous padding
   assert.match(enhancements, /\.admin-greeting-hero\s*\{[^}]*border-radius:\s*20px/);
   assert.match(enhancements, /\.admin-greeting-hero\s*\{[^}]*background:\s*linear-gradient/);
   assert.match(enhancements, /\.admin-greeting-tag\s*\{[^}]*border-radius:\s*9999px/);
+
+  // Extra hero description completely removed
+  assert.doesNotMatch(dashboardPage, /Monitor academic curriculum, track published resources/);
+
+  // Illustration is never hidden on mobile/tablet
+  assert.doesNotMatch(enhancements, /\.admin-greeting-hero-visual\s*\{[^}]*display:\s*none/);
 });
 
-test("Admin Dashboard Redesign: Consistent invisible grid alignment across all 4 major sections", async () => {
+test("Admin Dashboard Redesign: Consistent invisible grid alignment across all major sections", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
-  // All 4 major sections are inside admin-dashboard-flow
+  // All major sections are inside admin-dashboard-flow
   assert.match(dashboardPage, /<div className="admin-dashboard-flow">/);
   assert.match(dashboardPage, /admin-greeting-hero/);
   assert.match(dashboardPage, /admin-stat-grid actionable/);
@@ -78,15 +84,20 @@ test("Admin Dashboard Redesign: 5 Statistics cards with minimal icons, restraine
   assert.match(enhancements, /\.stat-card-semesters\s*\{[^}]*background:\s*linear-gradient/);
 });
 
-test("Admin Dashboard Redesign: Quick Access renaming, compact action cards, and 2-column grid", async () => {
+test("Admin Dashboard Redesign: Quick Access clean title, removed numbers/arrows, and 5 essential actions", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
-  // Section renamed to Quick Access with QUICK ACTIONS eyebrow
-  assert.match(dashboardPage, /<span>QUICK ACTIONS<\/span>\s*<h2>Quick Access<\/h2>/);
+  // Section has clean Quick Access title without QUICK ACTIONS eyebrow
+  assert.match(dashboardPage, /<h2>Quick Access<\/h2>/);
+  assert.doesNotMatch(dashboardPage, /QUICK ACTIONS/);
   assert.doesNotMatch(dashboardPage, /What do you want to update\?/);
+
+  // Removed numbers (01-05) and arrow indicators in rendered cards
+  assert.doesNotMatch(dashboardPage, /admin-quick-num/);
+  assert.doesNotMatch(dashboardPage, /admin-quick-arrow/);
 
   // Contains all 5 essential actions
   assert.match(dashboardPage, /\["01",\s*"Syllabus"/);
@@ -94,42 +105,45 @@ test("Admin Dashboard Redesign: Quick Access renaming, compact action cards, and
   assert.match(dashboardPage, /\["03",\s*"Flashcards"/);
   assert.match(dashboardPage, /\["04",\s*"Feedback & Testimonials"/);
   assert.match(dashboardPage, /\["05",\s*"Members & Users"/);
-
-  // Quick action card styling
-  assert.match(enhancements, /\.admin-quick-card\s*\{[^}]*display:\s*grid\s*!important/);
-  assert.match(enhancements, /\.admin-quick-card:nth-child\(5\)\s*\{[^}]*grid-column:\s*1\s*\/\s*-1\s*!important/);
 });
 
-test("Admin Dashboard Redesign: Needs Attention panel with distinct subtle tint and clear scan hierarchy", async () => {
+test("Admin Dashboard Redesign: Content Overview panel replaces Published but Incomplete with real metrics", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
-  // Structure and hierarchy
-  assert.match(dashboardPage, /<span>NEEDS ATTENTION<\/span>\s*<h2>Published but incomplete<\/h2>/);
-  assert.match(dashboardPage, /attention-card-indicator/);
-  assert.match(dashboardPage, /attention-card-body/);
-  assert.match(dashboardPage, /attention-arrow/);
+  // Completely removed "Published but incomplete" and "NEEDS ATTENTION"
+  assert.doesNotMatch(dashboardPage, /Published but incomplete/);
+  assert.doesNotMatch(dashboardPage, /NEEDS ATTENTION/);
 
-  // Distinct subtle background tint
-  assert.match(enhancements, /\.attention-panel\s*\{[^}]*background:\s*linear-gradient/);
-  assert.match(enhancements, /\.attention-card-indicator\s*\{[^}]*background:\s*#f59e0b/);
+  // Renders Content Overview panel with real data
+  assert.match(dashboardPage, /<h2>Content Overview<\/h2>/);
+  assert.match(dashboardPage, /content-overview-panel/);
+  assert.match(dashboardPage, /admin-overview-card/);
+  assert.match(dashboardPage, /admin-overview-badge/);
+
+  // Balanced 2-column layout in desktop CSS
+  assert.match(enhancements, /\.admin-dashboard-grid\.practical\s*\{[^}]*grid-template-columns:\s*1fr\s*1fr\s*!important/);
 });
 
-test("Admin Dashboard Redesign: Latest Changes activity grid with entity badges and IST timestamps", async () => {
+test("Admin Dashboard Redesign: Latest Changes activity grid with contextual icons and IST timestamps", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
   // Header and elements
-  assert.match(dashboardPage, /<span>RECENT ACTIVITY · IST<\/span>\s*<h2>Latest changes<\/h2>/);
+  assert.match(dashboardPage, /<h2>Latest Changes<\/h2>/);
   assert.match(dashboardPage, /admin-activity-grid/);
   assert.match(dashboardPage, /admin-activity-card/);
-  assert.match(dashboardPage, /admin-activity-badge/);
+  assert.match(dashboardPage, /admin-activity-icon-wrap/);
   assert.match(dashboardPage, /activity-context/);
   assert.match(dashboardPage, /activity-time/);
+
+  // Contextual icon mapper
+  assert.match(dashboardPage, /function ActivityIcon/);
+  assert.match(dashboardPage, /function activityColorClass/);
 
   // IST timestamp format
   assert.match(dashboardPage, /timeZone: "Asia\/Kolkata"/);

@@ -118,7 +118,7 @@ export default function MembersManager({
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("student");
   const [activityFilter, setActivityFilter] = useState<"all" | "today" | "week" | "no_study_time" | "inactive">("all");
-  const [sortKey, setSortKey] = useState<"newest" | "active" | "study_time" | "name" | "oldest">("newest");
+  const [sortKey, setSortKey] = useState<"newest" | "active" | "study_time" | "name" | "oldest">("active");
 
   // Selected member for detail modal
   const [selectedMember, setSelectedMember] = useState<MemberRecord | null>(null);
@@ -264,20 +264,50 @@ export default function MembersManager({
     <>
       <section className="members-stat-grid" aria-label="Member metrics">
         <article className="members-stat-card">
+          <div className="members-stat-top">
+            <div className="members-stat-icon-wrap icon-blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+          </div>
           <span>TOTAL MEMBERS</span>
           <b>{totalCount}</b>
           <p>{verifiedCount} verified accounts</p>
         </article>
+
         <article className="members-stat-card highlight">
+          <div className="members-stat-top">
+            <div className="members-stat-icon-wrap icon-green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </div>
+          </div>
           <span>NEW TODAY</span>
           <b>{newTodayCount}</b>
           <p>{newThisWeekCount} joined in last 7 days</p>
         </article>
+
         <article className="members-stat-card">
+          <div className="members-stat-top">
+            <div className="members-stat-icon-wrap icon-purple" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+          </div>
           <span>ACTIVE THIS WEEK</span>
           <b>{activeThisWeekCount}</b>
           <p>Confirmed student activity</p>
         </article>
+
         <article
           className="members-stat-card clickable"
           onClick={() => setShowStudyStatsModal(true)}
@@ -292,6 +322,14 @@ export default function MembersManager({
           aria-label="View study time breakdown across all students"
           title="Click to view study time breakdown"
         >
+          <div className="members-stat-top">
+            <div className="members-stat-icon-wrap icon-amber" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
           <span>STUDY TIME THIS WEEK</span>
           <b>{formatStudyTime(studyStats.week_seconds)}</b>
           <p>Across all students</p>
@@ -300,7 +338,14 @@ export default function MembersManager({
 
       {newThisWeekCount > 0 && (
         <aside className="members-new-banner">
-          <div className="members-new-banner-icon">✦</div>
+          <div className="members-new-banner-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <line x1="19" y1="8" x2="19" y2="14" />
+              <line x1="22" y1="11" x2="16" y2="11" />
+            </svg>
+          </div>
           <div className="members-new-banner-content">
             <b>{newThisWeekCount} new {newThisWeekCount === 1 ? "member" : "members"} joined this week</b>
             <p>Welcome your newest BMS students and educators. Newly registered accounts are highlighted with a badge below.</p>
@@ -311,9 +356,9 @@ export default function MembersManager({
       <div className="members-toolbar">
         <div className="members-search-wrap">
           <span className="members-search-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </span>
           <input
@@ -424,7 +469,7 @@ export default function MembersManager({
                 {/* Column 3: Role */}
                 <div className="members-col-role">
                   <span className={`members-role-badge ${isAdmin ? "badge-admin" : "badge-student"}`}>
-                    {member.role}
+                    {isAdmin ? "Admin" : member.role}
                   </span>
                 </div>
 
@@ -458,14 +503,33 @@ export default function MembersManager({
             );
           })
         ) : (
-          <div className="admin-empty">
-            <b>No members matched your search or filters</b>
-            <p>Try clearing your search query or switching filters.</p>
+          <div className="members-empty-state">
+            <div className="members-empty-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+            <b>No members found</b>
+            <p>No student or administrator accounts match your current search query or filter selection.</p>
+            {(search || roleFilter !== "all" || activityFilter !== "all") && (
+              <button
+                type="button"
+                className="members-empty-reset"
+                onClick={() => {
+                  setSearch("");
+                  setRoleFilter("all");
+                  setActivityFilter("all");
+                }}
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Member Activity Detail Modal (Requirement 11) */}
+      {/* Member Activity Detail Modal */}
       {selectedMember && (
         <div className="member-detail-backdrop" role="presentation" onClick={() => setSelectedMember(null)}>
           <div
@@ -491,7 +555,10 @@ export default function MembersManager({
                 onClick={() => setSelectedMember(null)}
                 aria-label="Close activity detail"
               >
-                ×
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 
@@ -541,8 +608,14 @@ export default function MembersManager({
 
                     return (
                       <div className="member-session-item" key={session.id}>
-                        <div className="member-session-icon" aria-hidden="true">
-                          {session.is_active ? "●" : "✓"}
+                        <div className={`member-session-icon ${session.is_active ? "is-live" : ""}`} aria-hidden="true">
+                          {session.is_active ? (
+                            <span className="session-pulse-dot" />
+                          ) : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
                         </div>
                         <div className="member-session-info">
                           <div className="member-session-time">
@@ -573,6 +646,7 @@ export default function MembersManager({
           </div>
         </div>
       )}
+
       {/* Total Study Time Overview Modal */}
       {showStudyStatsModal && (
         <div
@@ -598,7 +672,10 @@ export default function MembersManager({
                 onClick={() => setShowStudyStatsModal(false)}
                 aria-label="Close study time dialog"
               >
-                ×
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 

@@ -160,6 +160,91 @@ function QuickActionIcon({ href }: { href: string }) {
   }
 }
 
+function ActivityIcon({ entityType }: { entityType: string }) {
+  switch (entityType) {
+    case "testimonial":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <path d="M9 10h.01M15 10h.01" />
+        </svg>
+      );
+    case "feedback":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <line x1="8" y1="10" x2="16" y2="10" />
+          <line x1="8" y1="14" x2="13" y2="14" />
+        </svg>
+      );
+    case "flashcard":
+    case "flashcard_unit":
+    case "flashcard_topic":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="7" width="14" height="14" rx="2" />
+          <path d="M7 3h12a2 2 0 0 1 2 2v12" />
+        </svg>
+      );
+    case "content_item":
+    case "syllabus_unit":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+        </svg>
+      );
+    case "pyq":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M12 18v-6" />
+          <path d="m9 15 3 3 3-3" />
+        </svg>
+      );
+    case "member":
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+          <path d="M6 6h10" />
+          <path d="M6 10h10" />
+        </svg>
+      );
+  }
+}
+
+function activityColorClass(entityType: string): string {
+  switch (entityType) {
+    case "content_item":
+    case "syllabus_unit":
+      return "icon-blue";
+    case "pyq":
+      return "icon-green";
+    case "flashcard":
+    case "flashcard_unit":
+    case "flashcard_topic":
+      return "icon-purple";
+    case "testimonial":
+    case "feedback":
+      return "icon-amber";
+    case "member":
+      return "icon-rose";
+    default:
+      return "icon-blue";
+  }
+}
+
 export default async function AdminDashboard() {
   const { user, client } = await requireAdminSession();
   const [{ data: semesters }, { data: subjects }, { data: content }, { data: feedback }, { data: members }, { data: activity }] = await Promise.all([
@@ -170,19 +255,64 @@ export default async function AdminDashboard() {
     client.database.rpc("get_cue_members"),
     client.database.from("admin_activity").select("id,action,summary,entity_type,created_at").order("created_at", { ascending: false }).limit(8),
   ]);
+
   const publishedContent = content?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0;
   const draftContent = (content?.length ?? 0) - publishedContent;
+  const syllabusCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "syllabus_unit" && item.is_published).length ?? 0;
+  const pyqCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "pyq" && item.is_published).length ?? 0;
+  const flashcardCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "flashcard" && item.is_published).length ?? 0;
   const newFeedback = feedback?.filter((item: { status: string }) => item.status === "new").length ?? 0;
   const totalMembers = members?.length ?? 0;
   const newMembersThisWeek = countRecentMembers(members as { created_at: string }[] | null);
-  const needsAttention = (subjects ?? []).map((subject: { id: string; name: string; slug: string; semester_number: number; is_published: boolean }) => {
-    const items = content?.filter((item: { subject_id: string }) => item.subject_id === subject.id) ?? [];
-    const missing = ["syllabus_unit", "flashcard", "pyq"].filter((type) => !items.some((item: { content_type: string; is_published: boolean }) => item.content_type === type && item.is_published));
-    return { ...subject, missing };
-  }).filter((subject: { is_published: boolean; missing: string[] }) => subject.is_published && subject.missing.length).slice(0, 5);
+
+  const quickAccessItems = [
+    ["01", "Syllabus", "Manage units and detailed topic coverage.", "/admin/syllabus", "icon-blue"],
+    ["02", "PYQs & PDFs", "Upload and publish verified exam papers.", "/admin/pyqs", "icon-green"],
+    ["03", "Flashcards", "Build subject revision decks.", "/admin/flashcards", "icon-purple"],
+    ["04", "Feedback & Testimonials", "Review student responses and testimonials.", "/admin/feedback", "icon-amber"],
+    ["05", "Members & Users", "View registered accounts, roles and signups.", "/admin/members", "icon-rose"],
+  ];
+
+  const contentOverviewItems = [
+    {
+      title: "Curriculum Units",
+      detail: `${syllabusCount} published syllabus units`,
+      badge: `${syllabusCount} live`,
+      href: "/admin/syllabus",
+      color: "icon-blue",
+    },
+    {
+      title: "Previous Year Papers",
+      detail: `${pyqCount} past question papers & solutions`,
+      badge: `${pyqCount} papers`,
+      href: "/admin/pyqs",
+      color: "icon-green",
+    },
+    {
+      title: "Active Flashcards",
+      detail: `${flashcardCount} cards in active revision decks`,
+      badge: `${flashcardCount} cards`,
+      href: "/admin/flashcards",
+      color: "icon-purple",
+    },
+    {
+      title: "Student Feedback",
+      detail: `${feedback?.length ?? 0} total responses (${newFeedback} new)`,
+      badge: newFeedback > 0 ? `${newFeedback} new` : `${feedback?.length ?? 0} total`,
+      href: "/admin/feedback",
+      color: "icon-amber",
+    },
+    {
+      title: "Registered Members",
+      detail: `${totalMembers} student accounts (${newMembersThisWeek} this week)`,
+      badge: `${totalMembers} users`,
+      href: "/admin/members",
+      color: "icon-rose",
+    },
+  ];
 
   return (
-    <AdminShell active="/admin" email={user.email ?? "Admin"} eyebrow="OVERVIEW" title="Dashboard">
+    <AdminShell active="/admin" email={user.email ?? "Admin"} title="Dashboard">
       <AdminDashboardRefresh />
 
       <div className="admin-dashboard-flow">
@@ -196,9 +326,6 @@ export default async function AdminDashboard() {
             <div className="admin-greeting-text">
               <AdminGreeting fallback="Your publishing dashboard" />
             </div>
-            <p className="admin-greeting-desc">
-              Monitor academic curriculum, track published resources, and manage student engagement in real time.
-            </p>
           </div>
           <div className="admin-greeting-hero-visual" aria-hidden="true">
             <StudyBooksVisual />
@@ -212,7 +339,8 @@ export default async function AdminDashboard() {
               <div className="admin-stat-icon-wrap icon-blue" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-                  <path d="M6 6h10" /><path d="M6 10h10" />
+                  <path d="M6 6h10" />
+                  <path d="M6 10h10" />
                 </svg>
               </div>
             </div>
@@ -285,79 +413,57 @@ export default async function AdminDashboard() {
           </article>
         </div>
 
-        {/* Quick Access + Needs Attention Grid */}
+        {/* Quick Access + Content Overview Grid */}
         <div className="admin-dashboard-grid practical">
           <section className="quick-access-panel">
             <div className="admin-panel-title">
-              <div>
-                <span>QUICK ACTIONS</span>
-                <h2>Quick Access</h2>
-              </div>
+              <h2>Quick Access</h2>
             </div>
             <div className="admin-quick-grid">
-              {[
-                ["01", "Syllabus", "Manage units and detailed topic coverage.", "/admin/syllabus"],
-                ["02", "PYQs & PDFs", "Upload and publish a real exam paper.", "/admin/pyqs"],
-                ["03", "Flashcards", "Build a subject revision deck.", "/admin/flashcards"],
-                ["04", "Feedback & Testimonials", "Review student responses and testimonials.", "/admin/feedback"],
-                ["05", "Members & Users", "View registered accounts, roles and signups.", "/admin/members"],
-              ].map((item) => (
-                <Link href={item[3]} key={item[0]} className="admin-quick-card">
-                  <div className="admin-quick-icon-wrap" aria-hidden="true">
-                    <QuickActionIcon href={item[3]} />
+              {quickAccessItems.map(([id, title, desc, href, color]) => (
+                <Link href={href} key={id} className="admin-quick-card">
+                  <div className={`admin-quick-icon-wrap ${color}`} aria-hidden="true">
+                    <QuickActionIcon href={href} />
                   </div>
                   <div className="admin-quick-copy">
-                    <div className="admin-quick-header">
-                      <b>{item[1]}</b>
-                      <span className="admin-quick-num">{item[0]}</span>
-                    </div>
-                    <p>{item[2]}</p>
+                    <b>{title}</b>
+                    <p>{desc}</p>
                   </div>
-                  <span className="admin-quick-arrow" aria-hidden="true">→</span>
                 </Link>
               ))}
             </div>
           </section>
 
-          <aside className="attention-panel">
+          <section className="content-overview-panel">
             <div className="admin-panel-title">
-              <div>
-                <span>NEEDS ATTENTION</span>
-                <h2>Published but incomplete</h2>
-              </div>
+              <h2>Content Overview</h2>
             </div>
-            {needsAttention.length ? (
-              <div className="attention-list">
-                {needsAttention.map((subject: { id: string; name: string; semester_number: number; missing: string[] }) => (
-                  <Link href="/admin/syllabus" key={subject.id} className="attention-card">
-                    <div className="attention-card-indicator" aria-hidden="true" />
-                    <div className="attention-card-body">
-                      <b>{subject.name}</b>
-                      <small>
-                        Semester {subject.semester_number} · Missing {subject.missing.map((item) => (item === "syllabus_unit" ? "syllabus" : item === "pyq" ? "PYQs" : "flashcards")).join(", ")}
-                      </small>
-                    </div>
-                    <span className="attention-arrow" aria-hidden="true">→</span>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="attention-empty">
-                <span className="attention-empty-badge" aria-hidden="true">✓</span>
-                <p>Every published subject has its core material.</p>
-              </div>
-            )}
-          </aside>
+            <div className="admin-overview-grid">
+              {contentOverviewItems.map((item) => (
+                <Link href={item.href} key={item.title} className="admin-overview-card">
+                  <div className={`admin-overview-icon-wrap ${item.color}`} aria-hidden="true">
+                    <QuickActionIcon href={item.href} />
+                  </div>
+                  <div className="admin-overview-copy">
+                    <b>{item.title}</b>
+                    <p>{item.detail}</p>
+                  </div>
+                  <span className={`admin-overview-badge ${item.color}`}>{item.badge}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
         </div>
 
         {/* Recent Activity / Latest Changes */}
         <section className="recent-admin-activity">
           <div className="admin-panel-title">
             <div>
-              <span>RECENT ACTIVITY · IST</span>
-              <h2>Latest changes</h2>
+              <h2>Latest Changes</h2>
+              <small className="admin-panel-subtitle">Recorded in real time · Indian Standard Time (IST)</small>
             </div>
           </div>
+
           {activity?.length ? (
             <div className="admin-activity-grid">
               {(activity as AdminActivity[]).map((item) => {
@@ -365,13 +471,16 @@ export default async function AdminDashboard() {
                   code: item.entity_type.slice(0, 2).toUpperCase(),
                   label: item.entity_type.replaceAll("_", " "),
                 };
+                const colorClass = activityColorClass(item.entity_type);
                 return (
                   <article key={item.id} className="admin-activity-card">
-                    <span className="admin-activity-badge">{entity.code}</span>
+                    <div className={`admin-activity-icon-wrap ${colorClass}`} aria-hidden="true">
+                      <ActivityIcon entityType={item.entity_type} />
+                    </div>
                     <div className="admin-activity-info">
-                      <small className="activity-context">
+                      <span className="activity-context">
                         {activityActions[item.action] ?? item.action} · {entity.label}
-                      </small>
+                      </span>
                       <b>{item.summary}</b>
                       <small className="activity-time">{formatIst(item.created_at)}</small>
                     </div>
