@@ -34,24 +34,26 @@ test("Admin Sidebar: independent scroll, fixed logo, and reachable account/logou
   assert.doesNotMatch(globals, /\.admin-sidebar-foot small,\.admin-sidebar-foot b\{display:none\}/);
 });
 
-test("Admin Dashboard: compact 2-column grid on mobile/tablet with balanced fifth card", async () => {
+test("Admin Dashboard: balanced 6-card grid across desktop (6), tablet (3+3), and mobile (2+2+2)", async () => {
   const [page, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
-  // Page renders exactly 5 summary cards
+  // Page renders all 6 summary cards
   assert.match(page, /PUBLISHED SUBJECTS/);
   assert.match(page, /LIVE MATERIAL/);
   assert.match(page, /NEW FEEDBACK/);
   assert.match(page, /TOTAL MEMBERS/);
   assert.match(page, /AVAILABLE SEMESTERS/);
+  assert.match(page, /STUDY TIME THIS WEEK/);
 
-  // Tablet & Mobile CSS enforces 2-column grid and balanced 5th card
-  assert.match(enhancements, /\.admin-stat-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(enhancements, /\.admin-stat-grid article:nth-child\(5\)\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/);
+  // CSS enforces desktop 6-card row, tablet 3+3, and mobile 2+2+2
+  assert.match(enhancements, /\.admin-stat-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(enhancements, /@media\s*\(max-width:\s*1200px\)[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)\s*!important/);
+  assert.match(enhancements, /@media\s*\(max-width:\s*680px\)[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important/);
 
-  // Mobile never stacks all 5 cards into 1 column
+  // Mobile never stacks all cards into 1 column
   assert.doesNotMatch(enhancements, /@media\(max-width:\s*390px\)\s*\{[^}]*\.admin-stat-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
 });
 

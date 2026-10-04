@@ -56,18 +56,24 @@ test("Admin Dashboard Redesign: Consistent invisible grid alignment across all m
   );
 });
 
-test("Admin Dashboard Redesign: 5 Statistics cards with minimal icons, restrained colors and subtle backgrounds", async () => {
+test("Admin Dashboard Redesign: 6 Statistics cards with minimal icons, restrained colors, subtle backgrounds, and horizontal internal layout", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
   ]);
 
-  // Exactly 5 stat cards with icons and labels
+  // Exactly 6 stat cards with icons and labels
   assert.match(dashboardPage, /stat-card-subjects[\s\S]*PUBLISHED SUBJECTS/);
   assert.match(dashboardPage, /stat-card-content[\s\S]*LIVE MATERIAL/);
   assert.match(dashboardPage, /stat-card-feedback[\s\S]*NEW FEEDBACK/);
   assert.match(dashboardPage, /stat-card-members[\s\S]*TOTAL MEMBERS/);
   assert.match(dashboardPage, /stat-card-semesters[\s\S]*AVAILABLE SEMESTERS/);
+  assert.match(dashboardPage, /stat-card-studytime[\s\S]*STUDY TIME THIS WEEK/);
+
+  // Horizontal internal layout (Icon Left, Information Right)
+  assert.match(enhancements, /\.admin-stat-grid\.actionable article\s*\{[^}]*flex-direction:\s*row\s*!important/);
+  assert.match(dashboardPage, /admin-stat-icon-wrap/);
+  assert.match(dashboardPage, /admin-stat-info/);
 
   // Restrained accent colors for icons
   assert.match(enhancements, /\.admin-stat-icon-wrap\.icon-blue\s*\{[^}]*background:\s*#eff6ff/);
@@ -75,6 +81,7 @@ test("Admin Dashboard Redesign: 5 Statistics cards with minimal icons, restraine
   assert.match(enhancements, /\.admin-stat-icon-wrap\.icon-purple\s*\{[^}]*background:\s*#f5f3ff/);
   assert.match(enhancements, /\.admin-stat-icon-wrap\.icon-amber\s*\{[^}]*background:\s*#fffbeb/);
   assert.match(enhancements, /\.admin-stat-icon-wrap\.icon-rose\s*\{[^}]*background:\s*#fff1f2/);
+  assert.match(enhancements, /\.admin-stat-icon-wrap\.icon-teal\s*\{[^}]*background:\s*#f0fdfa/);
 
   // Subtle individual card backgrounds
   assert.match(enhancements, /\.stat-card-subjects\s*\{[^}]*background:\s*linear-gradient/);
@@ -82,6 +89,7 @@ test("Admin Dashboard Redesign: 5 Statistics cards with minimal icons, restraine
   assert.match(enhancements, /\.stat-card-feedback\s*\{[^}]*background:\s*linear-gradient/);
   assert.match(enhancements, /\.stat-card-members\s*\{[^}]*background:\s*linear-gradient/);
   assert.match(enhancements, /\.stat-card-semesters\s*\{[^}]*background:\s*linear-gradient/);
+  assert.match(enhancements, /\.stat-card-studytime\s*\{[^}]*background:\s*linear-gradient/);
 });
 
 test("Admin Dashboard Redesign: Quick Access clean title, removed numbers/arrows, and 5 essential actions", async () => {
@@ -107,7 +115,7 @@ test("Admin Dashboard Redesign: Quick Access clean title, removed numbers/arrows
   assert.match(dashboardPage, /\["05",\s*"Members & Users"/);
 });
 
-test("Admin Dashboard Redesign: Content Overview panel replaces Published but Incomplete with real metrics", async () => {
+test("Admin Dashboard Redesign: Content Performance panel replaces Published but Incomplete with real metrics", async () => {
   const [dashboardPage, enhancements] = await Promise.all([
     source("app/admin/page.tsx"),
     source("app/enhancements.css"),
@@ -117,14 +125,14 @@ test("Admin Dashboard Redesign: Content Overview panel replaces Published but In
   assert.doesNotMatch(dashboardPage, /Published but incomplete/);
   assert.doesNotMatch(dashboardPage, /NEEDS ATTENTION/);
 
-  // Renders Content Overview panel with real data
-  assert.match(dashboardPage, /<h2>Content Overview<\/h2>/);
-  assert.match(dashboardPage, /content-overview-panel/);
-  assert.match(dashboardPage, /admin-overview-card/);
-  assert.match(dashboardPage, /admin-overview-badge/);
+  // Renders Content Performance panel with real engagement data
+  assert.match(dashboardPage, /<h2>Content Performance<\/h2>/);
+  assert.match(dashboardPage, /content-performance-panel/);
+  assert.match(dashboardPage, /admin-performance-card/);
+  assert.match(dashboardPage, /admin-performance-badge/);
 
   // Balanced 2-column layout in desktop CSS
-  assert.match(enhancements, /\.admin-dashboard-grid\.practical\s*\{[^}]*grid-template-columns:\s*1fr\s*1fr\s*!important/);
+  assert.match(enhancements, /\.admin-dashboard-grid\.practical\s*\{[^}]*grid-template-columns:\s*1\.15fr\s*1fr\s*!important/);
 });
 
 test("Admin Dashboard Redesign: Latest Changes activity grid with contextual icons and IST timestamps", async () => {

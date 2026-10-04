@@ -16,14 +16,17 @@ export default async function AdminShell({
   email,
   eyebrow,
   title,
+  showHeader = true,
   children,
 }: {
   active: string;
   email: string;
   eyebrow?: string;
-  title: React.ReactNode;
+  title?: React.ReactNode;
+  showHeader?: boolean;
   children: React.ReactNode;
 }) {
+  const shouldRenderHeader = showHeader && Boolean(title);
   return (
     <main className="admin-dashboard">
       <aside className="admin-sidebar" aria-label="Admin Sidebar">
@@ -31,6 +34,11 @@ export default async function AdminShell({
         <div className="admin-sidebar-scroll">
           <AdminSidebarNav groups={groups} active={active} />
           <div className="admin-sidebar-foot">
+            <div className="admin-sidebar-actions">
+              <Link href="/" target="_blank" className="admin-sidebar-live-link">
+                View live site ↗
+              </Link>
+            </div>
             <div className="admin-user-profile">
               <div className="admin-user-avatar" aria-hidden="true">
                 <span>{email ? email.charAt(0).toUpperCase() : "A"}</span>
@@ -57,17 +65,19 @@ export default async function AdminShell({
         </div>
       </header>
       <section className="admin-workspace">
-        <header>
-          <div>
-            {eyebrow ? <span>{eyebrow}</span> : null}
-            <h1>{title}</h1>
-          </div>
-          <div className="admin-header-actions">
-            <Link href="/" target="_blank" className="admin-live-link">
-              View live site ↗
-            </Link>
-          </div>
-        </header>
+        {shouldRenderHeader ? (
+          <header>
+            <div>
+              {eyebrow ? <span>{eyebrow}</span> : null}
+              <h1>{title}</h1>
+            </div>
+            <div className="admin-header-actions">
+              <Link href="/" target="_blank" className="admin-live-link">
+                View live site ↗
+              </Link>
+            </div>
+          </header>
+        ) : null}
         {children}
       </section>
     </main>

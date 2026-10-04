@@ -53,6 +53,18 @@ function countRecentMembers(members: { created_at: string }[] | null) {
   return members.filter((m) => new Date(m.created_at).getTime() > cutoff).length;
 }
 
+function formatStudyTime(secondsInput?: number | string | null) {
+  const seconds = Number(secondsInput || 0);
+  if (!seconds || seconds <= 0) return "0m";
+  if (seconds < 60) return "< 1m";
+  const totalMinutes = Math.floor(seconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 function StudyBooksVisual() {
   return (
     <svg
@@ -242,6 +254,10 @@ function activityColorClass(entityType: string): string {
       return "icon-amber";
     case "member":
       return "icon-rose";
+    case "semester":
+      return "icon-rose";
+    case "subject":
+      return "icon-teal";
     default:
       return "icon-blue";
   }
@@ -249,13 +265,24 @@ function activityColorClass(entityType: string): string {
 
 export default async function AdminDashboard() {
   const { user, client } = await requireAdminSession();
-  const [{ data: semesters }, { data: subjects }, { data: content }, { data: feedback }, { data: members }, { data: activity }] = await Promise.all([
+  const [
+    { data: semesters },
+    { data: subjects },
+    { data: content },
+    { data: feedback },
+    { data: members },
+    { data: activity },
+    studySummaryRes,
+    sessionsRes,
+  ] = await Promise.all([
     client.database.from("semesters").select("id,status"),
     client.database.from("subjects").select("id,name,slug,semester_number,is_published").eq("course_code", "BMS").order("semester_number", { ascending: true }),
     client.database.from("content_items").select("id,subject_id,content_type,is_published"),
     client.database.from("feedback_submissions").select("id,status"),
     client.database.rpc("get_cue_members"),
     client.database.from("admin_activity").select("id,action,summary,entity_type,created_at").order("created_at", { ascending: false }).limit(8),
+    client.database.rpc("get_cue_study_time_summary"),
+    client.database.from("user_study_sessions").select("id,duration_seconds,resource_type,resource_id,page_path").limit(100),
   ]);
 
   // Resolve admin dynamic greeting server-side to prevent "Your Publishing Dashboard" flash
@@ -300,6 +327,16 @@ export default async function AdminDashboard() {
   const newFeedback = feedback?.filter((item: { status: string }) => item.status === "new").length ?? 0;
   const totalMembers = members?.length ?? 0;
   const newMembersThisWeek = countRecentMembers(members as { created_at: string }[] | null);
+  const publishedSubjectsCount = subjects?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0;
+  const totalSubjectsCount = subjects?.length ?? 0;
+  const publishedSemestersCount = semesters?.filter((item: { status: string }) => item.status === "published").length ?? 0;
+  const totalSemestersCount = semesters?.length ?? 0;
+
+  // Study time & engagement metrics
+  const rawStudyStats = Array.isArray(studySummaryRes?.data) ? studySummaryRes.data[0] : studySummaryRes?.data;
+  const weekSeconds = Number(rawStudyStats?.week_seconds || 0);
+  const studyTimeThisWeekFormatted = formatStudyTime(weekSeconds);
+  const totalStudySessions = sessionsRes?.data?.length ?? 0;
 
   const quickAccessItems = [
     ["01", "Syllabus", "Manage units and detailed topic coverage.", "/admin/syllabus", "icon-blue"],
@@ -307,48 +344,49 @@ export default async function AdminDashboard() {
     ["03", "Flashcards", "Build subject revision decks.", "/admin/flashcards", "icon-purple"],
     ["04", "Feedback & Testimonials", "Review student responses and testimonials.", "/admin/feedback", "icon-amber"],
     ["05", "Members & Users", "View registered accounts, roles and signups.", "/admin/members", "icon-rose"],
-  ];
+  ] as const;
 
-  const contentOverviewItems = [
+  const contentPerformanceItems = [
     {
-      title: "Curriculum Units",
-      detail: `${syllabusCount} published syllabus units`,
-      badge: `${syllabusCount} live`,
+      title: "Curriculum Syllabus",
+      detail: "Full coverage across BMS Semester 3",
+      badge: `${syllabusCount} Units Live`,
       href: "/admin/syllabus",
       color: "icon-blue",
     },
     {
-      title: "Previous Year Papers",
-      detail: `${pyqCount} past question papers & solutions`,
-      badge: `${pyqCount} papers`,
-      href: "/admin/pyqs",
-      color: "icon-green",
-    },
-    {
-      title: "Active Flashcards",
-      detail: `${flashcardCount} cards in active revision decks`,
-      badge: `${flashcardCount} cards`,
+      title: "Revision Flashcards",
+      detail: "Active recall modules in circulation",
+      badge: `${flashcardCount} Active Cards`,
       href: "/admin/flashcards",
       color: "icon-purple",
     },
     {
-      title: "Student Feedback",
-      detail: `${feedback?.length ?? 0} total responses (${newFeedback} new)`,
-      badge: newFeedback > 0 ? `${newFeedback} new` : `${feedback?.length ?? 0} total`,
-      href: "/admin/feedback",
-      color: "icon-amber",
+      title: "Exam Archive (PYQs)",
+      detail: "Verified past papers with solutions",
+      badge: `${pyqCount} Verified Papers`,
+      href: "/admin/pyqs",
+      color: "icon-green",
     },
     {
-      title: "Registered Members",
-      detail: `${totalMembers} student accounts (${newMembersThisWeek} this week)`,
-      badge: `${totalMembers} users`,
+      title: "Student Study Sessions",
+      detail: "Confirmed student learning & review time",
+      badge: totalStudySessions > 0 ? `${totalStudySessions} Sessions` : (rawStudyStats?.all_time_seconds ? `${formatStudyTime(rawStudyStats.all_time_seconds)} Studied` : "Tracking active"),
       href: "/admin/members",
-      color: "icon-rose",
+      color: "icon-teal",
+    },
+    {
+      title: "Community Feedback",
+      detail: newFeedback > 0 ? "Pending action in feedback inbox" : "All student inquiries addressed",
+      badge: newFeedback > 0 ? `${newFeedback} New Inquiries` : `${feedback?.length ?? 0} Submissions`,
+      href: "/admin/feedback",
+      color: "icon-amber",
+      highlight: newFeedback > 0,
     },
   ];
 
   return (
-    <AdminShell active="/admin" email={user.email ?? "Admin"} title="Dashboard">
+    <AdminShell active="/admin" email={user.email ?? "Admin"} showHeader={false}>
       <AdminDashboardRefresh />
 
       <div className="admin-dashboard-flow">
@@ -373,88 +411,102 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* 5 Statistics Cards */}
+        {/* 6 Statistics Cards (Horizontal: Icon Left, Info Stack Right) */}
         <div className="admin-stat-grid actionable">
           <article className="stat-card-subjects">
-            <div className="admin-stat-top">
-              <div className="admin-stat-icon-wrap icon-blue" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-                  <path d="M6 6h10" />
-                  <path d="M6 10h10" />
-                </svg>
-              </div>
+            <div className="admin-stat-icon-wrap icon-blue" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                <path d="M6 6h10" />
+                <path d="M6 10h10" />
+              </svg>
             </div>
-            <span>PUBLISHED SUBJECTS</span>
-            <b>{subjects?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0}</b>
-            <p>{subjects?.length ?? 0} total subjects</p>
+            <div className="admin-stat-info">
+              <span>PUBLISHED SUBJECTS</span>
+              <b>{publishedSubjectsCount}</b>
+              <p>{totalSubjectsCount} total subjects</p>
+            </div>
           </article>
 
           <article className="stat-card-content">
-            <div className="admin-stat-top">
-              <div className="admin-stat-icon-wrap icon-green" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-                  <path d="m2 17 10 5 10-5" />
-                  <path d="m2 12 10 5 10-5" />
-                </svg>
-              </div>
+            <div className="admin-stat-icon-wrap icon-green" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+                <path d="m2 17 10 5 10-5" />
+                <path d="m2 12 10 5 10-5" />
+              </svg>
             </div>
-            <span>LIVE MATERIAL</span>
-            <b>{publishedContent}</b>
-            <p>{draftContent} drafts waiting</p>
+            <div className="admin-stat-info">
+              <span>LIVE MATERIAL</span>
+              <b>{publishedContent}</b>
+              <p>{draftContent} drafts waiting</p>
+            </div>
           </article>
 
           <article className="stat-card-feedback">
-            <div className="admin-stat-top">
-              <div className="admin-stat-icon-wrap icon-purple" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  <line x1="8" y1="10" x2="16" y2="10" />
-                  <line x1="8" y1="14" x2="13" y2="14" />
-                </svg>
-              </div>
+            <div className="admin-stat-icon-wrap icon-amber" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <line x1="8" y1="10" x2="16" y2="10" />
+                <line x1="8" y1="14" x2="13" y2="14" />
+              </svg>
             </div>
-            <span>NEW FEEDBACK</span>
-            <b>{newFeedback}</b>
-            <p>{feedback?.length ?? 0} total responses</p>
+            <div className="admin-stat-info">
+              <span>NEW FEEDBACK</span>
+              <b>{newFeedback}</b>
+              <p>{feedback?.length ?? 0} total responses</p>
+            </div>
           </article>
 
           <article className="stat-card-members">
-            <div className="admin-stat-top">
-              <div className="admin-stat-icon-wrap icon-amber" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
+            <div className="admin-stat-icon-wrap icon-purple" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
             </div>
-            <span>TOTAL MEMBERS</span>
-            <b>{totalMembers}</b>
-            <p>{newMembersThisWeek} joined this week</p>
+            <div className="admin-stat-info">
+              <span>TOTAL MEMBERS</span>
+              <b>{totalMembers}</b>
+              <p>{newMembersThisWeek} joined this week</p>
+            </div>
           </article>
 
           <article className="stat-card-semesters">
-            <div className="admin-stat-top">
-              <div className="admin-stat-icon-wrap icon-rose" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                  <path d="m9 16 2 2 4-4" />
-                </svg>
-              </div>
+            <div className="admin-stat-icon-wrap icon-rose" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+                <path d="m9 16 2 2 4-4" />
+              </svg>
             </div>
-            <span>AVAILABLE SEMESTERS</span>
-            <b>{semesters?.filter((item: { status: string }) => item.status === "published").length ?? 0}</b>
-            <p>{semesters?.length ?? 0} configured</p>
+            <div className="admin-stat-info">
+              <span>AVAILABLE SEMESTERS</span>
+              <b>{publishedSemestersCount}</b>
+              <p>{totalSemestersCount} configured</p>
+            </div>
+          </article>
+
+          <article className="stat-card-studytime">
+            <div className="admin-stat-icon-wrap icon-teal" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <div className="admin-stat-info">
+              <span>STUDY TIME THIS WEEK</span>
+              <b>{studyTimeThisWeekFormatted}</b>
+              <p>Across all students</p>
+            </div>
           </article>
         </div>
 
-        {/* Quick Access + Content Overview Grid */}
+        {/* Quick Access + Content Performance Grid */}
         <div className="admin-dashboard-grid practical">
           <section className="quick-access-panel">
             <div className="admin-panel-title">
@@ -475,21 +527,26 @@ export default async function AdminDashboard() {
             </div>
           </section>
 
-          <section className="content-overview-panel">
+          <section className="content-performance-panel">
             <div className="admin-panel-title">
-              <h2>Content Overview</h2>
+              <div>
+                <h2>Content Performance</h2>
+                <small className="admin-panel-subtitle">Student engagement & curriculum health</small>
+              </div>
             </div>
-            <div className="admin-overview-grid">
-              {contentOverviewItems.map((item) => (
-                <Link href={item.href} key={item.title} className="admin-overview-card">
-                  <div className={`admin-overview-icon-wrap ${item.color}`} aria-hidden="true">
+            <div className="admin-performance-grid">
+              {contentPerformanceItems.map((item) => (
+                <Link href={item.href} key={item.title} className="admin-performance-card">
+                  <div className={`admin-performance-icon-wrap ${item.color}`} aria-hidden="true">
                     <QuickActionIcon href={item.href} />
                   </div>
-                  <div className="admin-overview-copy">
+                  <div className="admin-performance-copy">
                     <b>{item.title}</b>
                     <p>{item.detail}</p>
                   </div>
-                  <span className={`admin-overview-badge ${item.color}`}>{item.badge}</span>
+                  <span className={`admin-performance-badge ${item.color}${item.highlight ? " alert" : ""}`}>
+                    {item.badge}
+                  </span>
                 </Link>
               ))}
             </div>
