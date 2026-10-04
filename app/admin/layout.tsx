@@ -6,5 +6,9 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return children;
+  return (
+    <div className="admin-app-context" data-admin-context="true" style={{ display: "contents" }}>
+      {children}
+    </div>
+  );
 }

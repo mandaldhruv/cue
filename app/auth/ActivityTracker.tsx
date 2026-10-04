@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthContext";
+import { isAdminRoute } from "../lib/study-tracking";
 
 const SESSION_STORAGE_KEY = "cue_active_session_v1";
 const LOCAL_STORAGE_KEY = "cue_last_session_v1";
@@ -10,7 +11,16 @@ const INACTIVITY_THRESHOLD_MS = 120_000; // 2 minutes of idle time pauses active
 const HEARTBEAT_INTERVAL_SECONDS = 25; // Send updates every 25 seconds of confirmed active study
 const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes of inactivity starts a new session
 
+function isInAdminContext(currentPath: string): boolean {
+  if (isAdminRoute(currentPath)) return true;
+  if (typeof document !== "undefined" && Boolean(document.querySelector('[data-admin-context="true"]'))) {
+    return true;
+  }
+  return false;
+}
+
 function getResourceType(pathname: string): string | null {
+  if (isAdminRoute(pathname)) return "admin_panel";
   if (pathname.startsWith("/subjects/")) return "subject";
   if (pathname === "/subjects") return "subjects_directory";
   if (pathname.startsWith("/flashcards/")) return "flashcard_deck";
@@ -22,6 +32,7 @@ function getResourceType(pathname: string): string | null {
 }
 
 function getResourceId(pathname: string): string | null {
+  if (isAdminRoute(pathname)) return null;
   if (pathname.startsWith("/subjects/")) return pathname.split("/")[2] || null;
   if (pathname.startsWith("/flashcards/")) return pathname.split("/")[2] || null;
   return null;
@@ -71,21 +82,27 @@ export function ActivityTracker() {
   const pathname = usePathname();
 
   const sessionTokenRef = useRef<string>("");
+  const previousPathnameRef = useRef<string>(pathname);
   const pathnameRef = useRef<string>(pathname);
   const accumulatedSecondsRef = useRef<number>(0);
   const lastInteractionRef = useRef<number>(Date.now());
   const lastThrottledRef = useRef<number>(0);
   const isFlushingRef = useRef<boolean>(false);
 
-  pathnameRef.current = pathname;
-
-  const flushHeartbeat = (isClosing = false) => {
+  const flushHeartbeat = (isClosing = false, overridePath?: string) => {
     if (!sessionTokenRef.current || isFlushingRef.current) return;
+    const currentPath = overridePath || pathnameRef.current || (typeof window !== "undefined" ? window.location.pathname : "/");
+
+    // Administrative activity inside the Admin Panel must NEVER contribute to Study Time
+    if (isInAdminContext(currentPath)) {
+      accumulatedSecondsRef.current = 0;
+      return;
+    }
+
     const delta = accumulatedSecondsRef.current;
     if (delta <= 0 && !isClosing) return;
 
     accumulatedSecondsRef.current = 0;
-    const currentPath = pathnameRef.current || (typeof window !== "undefined" ? window.location.pathname : "/");
     const payload = {
       sessionToken: sessionTokenRef.current,
       deltaSeconds: delta,
@@ -132,11 +149,17 @@ export function ActivityTracker() {
     }
   };
 
-  // Route change: flush any seconds accumulated on the previous page
+  // Route change: flush any seconds accumulated on the previous student-facing page
   useEffect(() => {
     if (!user) return;
-    if (accumulatedSecondsRef.current > 0) {
-      flushHeartbeat(false);
+    const oldPath = previousPathnameRef.current;
+    previousPathnameRef.current = pathname;
+    pathnameRef.current = pathname;
+
+    if (accumulatedSecondsRef.current > 0 && !isInAdminContext(oldPath)) {
+      flushHeartbeat(false, oldPath);
+    } else {
+      accumulatedSecondsRef.current = 0;
     }
   }, [pathname, user]);
 
@@ -154,8 +177,10 @@ export function ActivityTracker() {
     sessionTokenRef.current = getOrCreateSessionToken();
     lastInteractionRef.current = Date.now();
 
-    // Initial heartbeat to register session start if new
-    flushHeartbeat(false);
+    // Initial heartbeat to register session start if on a student-facing study page
+    if (!isInAdminContext(pathnameRef.current)) {
+      flushHeartbeat(false);
+    }
 
     // Track user activity on window
     const onUserInteraction = () => {
@@ -204,6 +229,15 @@ export function ActivityTracker() {
 
     // Active seconds ticker (runs every 1 second)
     const intervalTimer = window.setInterval(() => {
+      const currentPath = pathnameRef.current || (typeof window !== "undefined" ? window.location.pathname : "/");
+
+      // Admin Panel activity is administrative activity, NOT study activity.
+      // Strictly never accumulate study time while inside the Admin Panel.
+      if (isInAdminContext(currentPath)) {
+        accumulatedSecondsRef.current = 0;
+        return;
+      }
+
       const now = Date.now();
       const isVisible = typeof document !== "undefined" && document.visibilityState === "visible";
       const isUserActive = now - lastInteractionRef.current <= INACTIVITY_THRESHOLD_MS;
