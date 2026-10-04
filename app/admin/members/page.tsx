@@ -1,6 +1,6 @@
 import { requireAdminSession } from "../../lib/insforge/server";
 import AdminShell from "../AdminShell";
-import type { MemberRecord } from "../types";
+import type { MemberRecord, StudyTimeSummary } from "../types";
 import MembersManager from "./MembersManager";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,21 @@ export const dynamic = "force-dynamic";
 export default async function AdminMembersPage() {
   const { user, client } = await requireAdminSession();
 
-  const { data, error } = await client.database.rpc("get_cue_members");
+  const [membersRes, studyStatsRes] = await Promise.all([
+    client.database.rpc("get_cue_members"),
+    client.database.rpc("get_cue_study_time_summary"),
+  ]);
+
+  const rawStats = Array.isArray(studyStatsRes.data)
+    ? studyStatsRes.data[0]
+    : studyStatsRes.data;
+
+  const initialStudyStats: StudyTimeSummary = {
+    today_seconds: Number(rawStats?.today_seconds || 0),
+    week_seconds: Number(rawStats?.week_seconds || 0),
+    month_seconds: Number(rawStats?.month_seconds || 0),
+    all_time_seconds: Number(rawStats?.all_time_seconds || 0),
+  };
 
   return (
     <AdminShell
@@ -21,10 +35,13 @@ export default async function AdminMembersPage() {
         <p>Registered student and educator accounts authenticated through InsForge.</p>
         <span>Authentication Directory</span>
       </div>
-      {error ? (
-        <div className="admin-notice error">{error.message ?? "Could not load member data."}</div>
+      {membersRes.error ? (
+        <div className="admin-notice error">{membersRes.error.message ?? "Could not load member data."}</div>
       ) : (
-        <MembersManager members={(data ?? []) as MemberRecord[]} />
+        <MembersManager
+          members={(membersRes.data ?? []) as MemberRecord[]}
+          initialStudyStats={initialStudyStats}
+        />
       )}
     </AdminShell>
   );

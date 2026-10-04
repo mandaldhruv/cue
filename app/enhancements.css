@@ -2694,6 +2694,24 @@
   background: #fff;
   box-shadow: 0 4px 18px rgba(22,44,79,.04);
 }
+.members-stat-card.clickable{
+  cursor: pointer;
+  text-align: left;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  user-select: none;
+}
+.members-stat-card.clickable:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22,44,79,.08);
+  border-color: #9ac2f8;
+}
+.members-stat-card.clickable:active{
+  transform: translateY(0);
+}
+.members-stat-card.clickable:focus-visible{
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
 .members-stat-card.highlight{
   border-color: #b7d6fb;
   background: linear-gradient(145deg, #ffffff, #f1f7ff);
@@ -3263,6 +3281,90 @@
 @media(max-width: 640px) {
   .member-detail-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Study Time Summary Modal */
+.study-summary-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #e1e8f2;
+  box-shadow: 0 24px 64px rgba(12, 28, 54, .24);
+  overflow: hidden;
+  animation: cueScaleIn .2s cubic-bezier(.16, 1, .3, 1);
+  padding: 24px;
+}
+.study-summary-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.study-summary-eyebrow {
+  display: block;
+  color: #1d4ed8;
+  font: 800 11px var(--font-mono);
+  letter-spacing: .08em;
+  margin-bottom: 4px;
+}
+.study-summary-modal-head p {
+  margin: 0;
+  font-size: 13px;
+  color: #5d6d84;
+  font-weight: 500;
+}
+.study-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.study-summary-metric-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 16px;
+  border-radius: 14px;
+  border: 1px solid #dfe5ee;
+  background: #fbfcfe;
+}
+.study-summary-metric-card.highlight {
+  border-color: #b7d6fb;
+  background: linear-gradient(145deg, #ffffff, #f0f7ff);
+}
+.study-summary-metric-label {
+  color: #69788e;
+  font: 800 10.5px var(--font-mono);
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.study-summary-metric-value {
+  color: #0e1726;
+  font-size: 26px;
+  font-weight: 850;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  font-family: var(--font-mono);
+}
+@media (max-width: 480px) {
+  .study-summary-modal-card {
+    padding: 20px 16px;
+    max-width: 92vw;
+  }
+  .study-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .study-summary-metric-card {
+    padding: 14px 12px;
+  }
+  .study-summary-metric-value {
+    font-size: 22px;
   }
 }
 

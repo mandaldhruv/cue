@@ -142,3 +142,10 @@ export type UserSessionRecord = {
   resource_type: string | null;
   resource_id: string | null;
 };
+
+export type StudyTimeSummary = {
+  today_seconds: number;
+  week_seconds: number;
+  month_seconds: number;
+  all_time_seconds: number;
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { MemberRecord, UserSessionRecord } from "../types";
+import type { MemberRecord, StudyTimeSummary, UserSessionRecord } from "../types";
 
 function initials(name: string) {
   if (!name) return "CU";
@@ -71,16 +71,101 @@ function isWithinDays(dateStr: string, days: number) {
   return Date.now() - date.getTime() <= days * 24 * 60 * 60 * 1000;
 }
 
-export default function MembersManager({ members }: { members: MemberRecord[] }) {
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+function isTodayIst(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+
+  const targetDay = Math.floor((d.getTime() + IST_OFFSET_MS) / 86400000);
+  const currentDay = Math.floor((now.getTime() + IST_OFFSET_MS) / 86400000);
+  return targetDay === currentDay;
+}
+
+function isThisWeekIst(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+
+  const targetDay = Math.floor((d.getTime() + IST_OFFSET_MS) / 86400000);
+  const currentDay = Math.floor((now.getTime() + IST_OFFSET_MS) / 86400000);
+
+  const currentDayOfWeek = (currentDay + 4) % 7; // 0=Sun, 1=Mon, ..., 6=Sat
+  const diffToMonday = (currentDayOfWeek + 6) % 7;
+  const weekStartDay = currentDay - diffToMonday;
+  const nextWeekStartDay = weekStartDay + 7;
+
+  return targetDay >= weekStartDay && targetDay < nextWeekStartDay;
+}
+
+function isInactive7Days(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return true;
+  return Date.now() - d.getTime() >= 7 * 24 * 60 * 60 * 1000;
+}
+
+export default function MembersManager({
+  members,
+  initialStudyStats,
+}: {
+  members: MemberRecord[];
+  initialStudyStats?: StudyTimeSummary;
+}) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("student");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortKey, setSortKey] = useState<"newest" | "oldest" | "name" | "active" | "study_time">("newest");
+  const [activityFilter, setActivityFilter] = useState<"all" | "today" | "week" | "no_study_time" | "inactive">("all");
+  const [sortKey, setSortKey] = useState<"newest" | "active" | "study_time" | "name" | "oldest">("newest");
 
   // Selected member for detail modal
   const [selectedMember, setSelectedMember] = useState<MemberRecord | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [recentSessions, setRecentSessions] = useState<UserSessionRecord[]>([]);
+
+  // Study time overview modal
+  const [showStudyStatsModal, setShowStudyStatsModal] = useState(false);
+  const [studyStats, setStudyStats] = useState<StudyTimeSummary>(() => {
+    return initialStudyStats || {
+      today_seconds: 0,
+      week_seconds: 0,
+      month_seconds: 0,
+      all_time_seconds: 0,
+    };
+  });
+
+  // Global keydown handler to close modals on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedMember(null);
+        setShowStudyStatsModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  // Refresh study stats when modal opens
+  useEffect(() => {
+    if (!showStudyStatsModal) return;
+    let isMounted = true;
+    fetch("/api/admin/members/study-stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.ok && data.summary) {
+          setStudyStats(data.summary);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [showStudyStatsModal]);
 
   // Load sessions when a member is selected
   useEffect(() => {
@@ -106,14 +191,8 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
         if (isMounted) setSessionsLoading(false);
       });
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedMember(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       isMounted = false;
-      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedMember]);
 
@@ -122,11 +201,8 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
   const newTodayCount = useMemo(() => members.filter((m) => isWithinHours(m.created_at, 24)).length, [members]);
   const newThisWeekCount = useMemo(() => members.filter((m) => isWithinDays(m.created_at, 7)).length, [members]);
   const verifiedCount = useMemo(() => members.filter((m) => m.email_verified).length, [members]);
-  const activeRecentCount = useMemo(() => {
-    return members.filter((m) => {
-      const activeTime = m.last_seen || m.created_at;
-      return isWithinDays(activeTime, 7);
-    }).length;
+  const activeThisWeekCount = useMemo(() => {
+    return members.filter((m) => isThisWeekIst(m.last_seen)).length;
   }, [members]);
 
   // Filtered and sorted members
@@ -144,8 +220,19 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
           if (roleFilter === "admin" && !isRoleAdmin) return false;
           if (roleFilter === "student" && isRoleAdmin) return false;
         }
-        if (statusFilter === "verified" && !member.email_verified) return false;
-        if (statusFilter === "unverified" && member.email_verified) return false;
+        if (activityFilter === "today") {
+          if (!member.last_seen || !isTodayIst(member.last_seen)) return false;
+        }
+        if (activityFilter === "week") {
+          if (!member.last_seen || !isThisWeekIst(member.last_seen)) return false;
+        }
+        if (activityFilter === "no_study_time") {
+          const seconds = Number(member.total_study_seconds || 0);
+          if (seconds > 0) return false;
+        }
+        if (activityFilter === "inactive") {
+          if (!isInactive7Days(member.last_seen)) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -164,13 +251,14 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
           return bSeconds - aSeconds;
         }
         if (sortKey === "active") {
-          const aTime = new Date(a.last_seen || a.created_at).getTime();
-          const bTime = new Date(b.last_seen || b.created_at).getTime();
-          return bTime - aTime;
+          const aTime = a.last_seen ? new Date(a.last_seen).getTime() : 0;
+          const bTime = b.last_seen ? new Date(b.last_seen).getTime() : 0;
+          if (bTime !== aTime) return bTime - aTime;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
         return 0;
       });
-  }, [members, search, roleFilter, statusFilter, sortKey]);
+  }, [members, search, roleFilter, activityFilter, sortKey]);
 
   return (
     <>
@@ -187,13 +275,26 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
         </article>
         <article className="members-stat-card">
           <span>ACTIVE THIS WEEK</span>
-          <b>{activeRecentCount}</b>
-          <p>Recent logins & study activity</p>
+          <b>{activeThisWeekCount}</b>
+          <p>Confirmed student activity</p>
         </article>
-        <article className="members-stat-card">
-          <span>EMAIL VERIFICATION</span>
-          <b>{totalCount ? Math.round((verifiedCount / totalCount) * 100) : 0}%</b>
-          <p>{totalCount - verifiedCount} pending verification</p>
+        <article
+          className="members-stat-card clickable"
+          onClick={() => setShowStudyStatsModal(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setShowStudyStatsModal(true);
+            }
+          }}
+          aria-label="View study time breakdown across all students"
+          title="Click to view study time breakdown"
+        >
+          <span>STUDY TIME THIS WEEK</span>
+          <b>{formatStudyTime(studyStats.week_seconds)}</b>
+          <p>Across all students</p>
         </article>
       </section>
 
@@ -240,11 +341,13 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
           </label>
 
           <label>
-            <span>STATUS</span>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option>
-              <option value="verified">Verified only</option>
-              <option value="unverified">Pending only</option>
+            <span>ACTIVITY</span>
+            <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value as any)}>
+              <option value="all">All Activity</option>
+              <option value="today">Active Today</option>
+              <option value="week">Active This Week</option>
+              <option value="no_study_time">No Study Time</option>
+              <option value="inactive">Inactive</option>
             </select>
           </label>
 
@@ -466,6 +569,59 @@ export default function MembersManager({ members }: { members: MemberRecord[] })
                   No recorded study sessions for this member yet.
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Total Study Time Overview Modal */}
+      {showStudyStatsModal && (
+        <div
+          className="member-detail-backdrop"
+          role="presentation"
+          onClick={() => setShowStudyStatsModal(false)}
+        >
+          <div
+            className="study-summary-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="study-summary-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="study-summary-modal-head">
+              <div>
+                <span className="study-summary-eyebrow">STUDY TIME</span>
+                <p id="study-summary-title">Total tracked study activity across all students</p>
+              </div>
+              <button
+                type="button"
+                className="member-detail-close"
+                onClick={() => setShowStudyStatsModal(false)}
+                aria-label="Close study time dialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="study-summary-grid">
+              <div className="study-summary-metric-card">
+                <span className="study-summary-metric-label">TODAY</span>
+                <b className="study-summary-metric-value">{formatStudyTime(studyStats.today_seconds)}</b>
+              </div>
+
+              <div className="study-summary-metric-card highlight">
+                <span className="study-summary-metric-label">THIS WEEK</span>
+                <b className="study-summary-metric-value">{formatStudyTime(studyStats.week_seconds)}</b>
+              </div>
+
+              <div className="study-summary-metric-card">
+                <span className="study-summary-metric-label">THIS MONTH</span>
+                <b className="study-summary-metric-value">{formatStudyTime(studyStats.month_seconds)}</b>
+              </div>
+
+              <div className="study-summary-metric-card">
+                <span className="study-summary-metric-label">ALL TIME</span>
+                <b className="study-summary-metric-value">{formatStudyTime(studyStats.all_time_seconds)}</b>
+              </div>
             </div>
           </div>
         </div>

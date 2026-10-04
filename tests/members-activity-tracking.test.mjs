@@ -123,7 +123,7 @@ test("Member Activity Detail Modal: provides rich session drilldown for administ
   assert.match(enhancements, /\.member-sessions-list\s*\{/);
 });
 
-test("Members & Users: Role filter defaults to Students while preserving all dropdown options", async () => {
+test("Members & Users: Role filter defaults to Students and Activity filter replaces Status filter", async () => {
   const membersManager = await source("app/admin/members/MembersManager.tsx");
 
   // 1. Role filter state initializes to "student" by default
@@ -134,12 +134,67 @@ test("Members & Users: Role filter defaults to Students while preserving all dro
   assert.match(membersManager, /<option value="student">Students<\/option>/);
   assert.match(membersManager, /<option value="admin">Administrators<\/option>/);
 
-  // 3. Status filter options preserved
-  assert.match(membersManager, /<option value="all">All Status<\/option>/);
-  assert.match(membersManager, /<option value="verified">Verified only<\/option>/);
-  assert.match(membersManager, /<option value="unverified">Pending only<\/option>/);
+  // 3. Status filter removed from UI and replaced with Activity filter
+  assert.doesNotMatch(membersManager, /<span>STATUS<\/span>/);
+  assert.doesNotMatch(membersManager, /<option value="verified">Verified only<\/option>/);
+  assert.match(membersManager, /<span>ACTIVITY<\/span>/);
+  assert.match(membersManager, /<option value="all">All Activity<\/option>/);
+  assert.match(membersManager, /<option value="today">Active Today<\/option>/);
+  assert.match(membersManager, /<option value="week">Active This Week<\/option>/);
+  assert.match(membersManager, /<option value="no_study_time">No Study Time<\/option>/);
+  assert.match(membersManager, /<option value="inactive">Inactive<\/option>/);
 
   // 4. Role filter logic strictly distinguishes student vs admin
   assert.match(membersManager, /roleFilter === "admin" && !isRoleAdmin/);
   assert.match(membersManager, /roleFilter === "student" && isRoleAdmin/);
+
+  // 5. Activity filter definitions logic
+  assert.match(membersManager, /activityFilter === "today"/);
+  assert.match(membersManager, /activityFilter === "week"/);
+  assert.match(membersManager, /activityFilter === "no_study_time"/);
+  assert.match(membersManager, /activityFilter === "inactive"/);
+});
+
+test("Members & Users: Study Time summary card and four-period modal", async () => {
+  const [membersManager, enhancements, studyStatsRoute, migration] = await Promise.all([
+    source("app/admin/members/MembersManager.tsx"),
+    source("app/enhancements.css"),
+    source("app/api/admin/members/study-stats/route.ts"),
+    source("migrations/20261004100000_study-time-summary-and-clean-last-seen.sql"),
+  ]);
+
+  // 1. Summary cards: Email Verification card replaced by STUDY TIME THIS WEEK
+  assert.doesNotMatch(membersManager, /<span>EMAIL VERIFICATION<\/span>/);
+  assert.match(membersManager, /<span>STUDY TIME THIS WEEK<\/span>/);
+  assert.match(membersManager, /<p>Across all students<\/p>/);
+
+  // 2. Study Time card is clickable
+  assert.match(membersManager, /className="members-stat-card clickable"/);
+  assert.match(membersManager, /onClick=\{\(\) => setShowStudyStatsModal\(true\)\}/);
+
+  // 3. Modal shows TODAY, THIS WEEK, THIS MONTH, ALL TIME
+  assert.match(membersManager, /className="study-summary-modal-card"/);
+  assert.match(membersManager, /<span className="study-summary-eyebrow">STUDY TIME<\/span>/);
+  assert.match(membersManager, /Total tracked study activity across all students/);
+  assert.match(membersManager, /<span className="study-summary-metric-label">TODAY<\/span>/);
+  assert.match(membersManager, /<span className="study-summary-metric-label">THIS WEEK<\/span>/);
+  assert.match(membersManager, /<span className="study-summary-metric-label">THIS MONTH<\/span>/);
+  assert.match(membersManager, /<span className="study-summary-metric-label">ALL TIME<\/span>/);
+
+  // 4. Modal styles in enhancements.css
+  assert.match(enhancements, /\.study-summary-modal-card\s*\{/);
+  assert.match(enhancements, /\.study-summary-grid\s*\{/);
+  assert.match(enhancements, /\.study-summary-metric-card\s*\{/);
+
+  // 5. Protected study stats API route
+  assert.match(studyStatsRoute, /requireAdminSession\(\)/);
+  assert.match(studyStatsRoute, /get_cue_study_time_summary/);
+
+  // 6. SQL migration defines get_cue_study_time_summary with Asia/Kolkata timezone
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.get_cue_study_time_summary\(\)/);
+  assert.match(migration, /Asia\/Kolkata/);
+  assert.match(migration, /today_seconds bigint/);
+  assert.match(migration, /week_seconds bigint/);
+  assert.match(migration, /month_seconds bigint/);
+  assert.match(migration, /all_time_seconds bigint/);
 });
