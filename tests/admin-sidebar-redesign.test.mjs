@@ -36,9 +36,26 @@ test("Admin Sidebar Redesign: Clean, modern outline SVG icon system mapped to al
   assert.match(sidebarNav, /stroke="currentColor"/);
   assert.match(sidebarNav, /fill="none"/);
 
+  // Dashboard specifically uses outline Home icon
+  assert.match(sidebarNav, /case\s+"\/admin":[\s\S]*?<path\s+d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"\s*\/>/);
+
   // No heavy letter badges (DB, SE, etc.) rendered as text inside nav icons
   assert.doesNotMatch(sidebarNav, /admin-nav-fallback-code/);
   assert.doesNotMatch(sidebarNav, /admin-sidebar-badge/);
+});
+
+test("Admin Sidebar Redesign: Navigation labels sit directly on navy background with no grey pills", async () => {
+  const [globals, enhancements] = await Promise.all([
+    source("app/globals.css"),
+    source("app/enhancements.css"),
+  ]);
+
+  // globals.css does not apply grey background to nav spans
+  assert.doesNotMatch(globals, /\.admin-sidebar nav a>span\{[^}]*background:#1d2533/);
+
+  // enhancements.css guarantees transparent background for all nav label spans
+  assert.match(enhancements, /\.admin-sidebar-label[\s\S]*?background:\s*transparent\s*!important/);
+  assert.match(enhancements, /\.admin-sidebar-label[\s\S]*?border-radius:\s*0\s*!important/);
 });
 
 test("Admin Sidebar Redesign: Top branding area displays intentional layout with ADMIN CONSOLE badge", async () => {
