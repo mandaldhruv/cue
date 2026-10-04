@@ -3918,25 +3918,86 @@
 
 @media(max-width: 768px) {
   .members-toolbar {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 20px;
+    margin-bottom: 20px;
   }
   .members-search-wrap {
-    max-width: 100%;
-    width: 100%;
+    flex: 0 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: relative !important;
+    margin: 0 !important;
+  }
+  .members-search-wrap input {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 34px 0 38px !important;
+    font-size: 14px !important;
+    border-radius: 11px !important;
+    box-sizing: border-box !important;
+  }
+  .members-search-icon {
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .members-search-wrap button {
+    position: absolute !important;
+    right: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
   }
   .members-filters {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px 12px !important;
+    width: 100% !important;
+    align-items: start !important;
+    margin: 0 !important;
+  }
+  .members-filters label {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .members-filters label > span {
+    font: 750 10px var(--font-mono) !important;
+    letter-spacing: .06em !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    line-height: 1.2 !important;
+  }
+  .members-filters label:nth-child(1),
+  .members-filters label:nth-child(2) {
+    grid-column: span 1 !important;
   }
   .members-filters label:nth-child(3) {
-    grid-column: 1 / -1;
+    grid-column: 1 / -1 !important;
   }
   .members-filters select {
-    width: 100%;
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 32px 0 12px !important;
+    font-size: 13.5px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
   }
   .members-table-head {
     display: none !important;

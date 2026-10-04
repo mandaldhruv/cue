@@ -14,7 +14,7 @@ test("Admin Dashboard Redesign: Top Greeting Hero with dynamic greeting, removed
   ]);
 
   // Preserves dynamic greeting system
-  assert.match(dashboardPage, /<AdminGreeting fallback="Your publishing dashboard" \/>/);
+  assert.match(dashboardPage, /<AdminGreeting[\s\S]*fallback="Your publishing dashboard"/);
   assert.match(dashboardPage, /Cue Admin Workspace/);
   assert.match(dashboardPage, /<StudyBooksVisual/);
 

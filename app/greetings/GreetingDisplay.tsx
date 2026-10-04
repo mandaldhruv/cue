@@ -62,8 +62,8 @@ function useGreeting(audience: Audience, initialGreeting: GreetingState | null =
     return () => controller.abort();
   }, [audience, eventId, greeting?.userId, loading, user]);
 
-  const message = user && greeting?.userId === user.id ? greeting.message : null;
-  const timeBlock = user && greeting?.userId === user.id ? greeting.timeBlock : null;
+  const message = greeting?.message ?? initialGreeting?.message ?? null;
+  const timeBlock = greeting?.timeBlock ?? initialGreeting?.timeBlock ?? null;
   return { message, timeBlock, user, loading, visible: !loading && Boolean(user) };
 }
 
@@ -110,10 +110,28 @@ export function HomeHeroHeading({
   return <h1 className="hero-greeting-title" aria-live="polite">{message}</h1>;
 }
 
-export function AdminGreeting({ fallback }: { fallback: string }) {
-  const { message, timeBlock } = useGreeting("admin");
-  return <span className="admin-greeting-copy">
-    {message ? <small>{getSalutation(timeBlock, message)}</small> : null}
-    <strong>{message ?? fallback}</strong>
-  </span>;
+export function AdminGreeting({
+  initialUserId,
+  initialMessage,
+  initialTimeBlock,
+  fallback,
+}: {
+  initialUserId?: string | null;
+  initialMessage?: string | null;
+  initialTimeBlock?: number | null;
+  fallback?: string;
+}) {
+  const initialGreeting = initialMessage
+    ? { userId: initialUserId ?? "", message: initialMessage, timeBlock: initialTimeBlock ?? 7 }
+    : null;
+  const { message, timeBlock } = useGreeting("admin", initialGreeting);
+  const activeMessage = message || initialMessage;
+  const activeTimeBlock = timeBlock ?? initialTimeBlock ?? null;
+
+  return (
+    <span className="admin-greeting-copy">
+      {activeMessage ? <small>{getSalutation(activeTimeBlock, activeMessage)}</small> : null}
+      <strong>{activeMessage || fallback}</strong>
+    </span>
+  );
 }

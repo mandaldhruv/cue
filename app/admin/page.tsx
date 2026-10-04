@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
 import { requireAdminSession } from "../lib/insforge/server";
 import AdminShell from "./AdminShell";
 import AdminDashboardRefresh from "./AdminDashboardRefresh";
 import { AdminGreeting } from "../greetings/GreetingDisplay";
+import greetingMessages from "../greetings/greeting-messages.generated.json";
 
 export const dynamic = "force-dynamic";
 
@@ -256,6 +258,40 @@ export default async function AdminDashboard() {
     client.database.from("admin_activity").select("id,action,summary,entity_type,created_at").order("created_at", { ascending: false }).limit(8),
   ]);
 
+  // Resolve admin dynamic greeting server-side to prevent "Your Publishing Dashboard" flash
+  let initialGreeting: string | null = null;
+  let initialGreetingTimeBlock: number | null = null;
+  try {
+    const { data: greetingData } = await client.database.rpc("reserve_cue_greeting", {
+      p_audience: "admin",
+      p_event_id: randomUUID(),
+    });
+    const reservation = (Array.isArray(greetingData) ? greetingData[0] : greetingData) as { time_block: number; message_index: number } | null;
+    if (reservation?.time_block && reservation?.message_index !== undefined) {
+      const blockIndex = Number(reservation.time_block) - 1;
+      const messageIndex = Number(reservation.message_index);
+      const source = (greetingMessages.admin as string[][]);
+      const sourceMessage = source[blockIndex]?.[messageIndex];
+      if (sourceMessage) {
+        initialGreeting = sourceMessage;
+        initialGreetingTimeBlock = blockIndex + 1;
+      }
+    }
+  } catch (err) {
+    console.error("Admin greeting reservation error", err);
+  }
+
+  // Graceful fallback to current IST time block if reservation is unavailable
+  if (!initialGreeting) {
+    const currentHourIst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
+    const fallbackBlockIndex = Math.min(7, Math.max(0, Math.floor(currentHourIst / 3)));
+    initialGreetingTimeBlock = fallbackBlockIndex + 1;
+    const adminMessages = (greetingMessages.admin as string[][])[fallbackBlockIndex];
+    if (adminMessages?.length) {
+      initialGreeting = adminMessages[0];
+    }
+  }
+
   const publishedContent = content?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0;
   const draftContent = (content?.length ?? 0) - publishedContent;
   const syllabusCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "syllabus_unit" && item.is_published).length ?? 0;
@@ -324,7 +360,12 @@ export default async function AdminDashboard() {
               <span>Cue Admin Workspace</span>
             </div>
             <div className="admin-greeting-text">
-              <AdminGreeting fallback="Your publishing dashboard" />
+              <AdminGreeting
+                initialUserId={user.id}
+                initialMessage={initialGreeting}
+                initialTimeBlock={initialGreetingTimeBlock}
+                fallback="Your publishing dashboard"
+              />
             </div>
           </div>
           <div className="admin-greeting-hero-visual" aria-hidden="true">
