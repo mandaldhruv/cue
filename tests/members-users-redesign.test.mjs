@@ -7,26 +7,16 @@ async function source(relPath) {
   return fs.readFile(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("Members & Users Redesign: Page header and refined Authentication Directory strip", async () => {
-  const [page, enhancements] = await Promise.all([
-    source("app/admin/members/page.tsx"),
-    source("app/enhancements.css"),
-  ]);
+test("Members & Users: Page header starts directly with Members & Users and Authentication Directory is removed", async () => {
+  const page = await source("app/admin/members/page.tsx");
 
-  // 1. Page Header maintains COMMUNITY eyebrow and Members & users title
-  assert.match(page, /eyebrow="COMMUNITY"/);
-  assert.match(page, /title="Members & users"/);
+  // 1. Page Header starts directly with Members & Users title without COMMUNITY eyebrow
+  assert.doesNotMatch(page, /eyebrow="COMMUNITY"/);
+  assert.match(page, /title="Members & Users"/);
 
-  // 2. Authentication Directory redesigned into secondary informational strip
-  assert.match(page, /className="admin-page-intro members-directory-strip"/);
-  assert.match(page, /className="members-intro-icon-wrap"/);
-  assert.match(page, /className="members-intro-title">Authentication Directory<\/span>/);
-  assert.match(page, /Registered student and educator accounts authenticated through InsForge\./);
-
-  // 3. Informational strip styling in enhancements.css
-  assert.match(enhancements, /\.admin-page-intro\.members-directory-strip\s*\{/);
-  assert.match(enhancements, /\.members-intro-icon-wrap\s*\{/);
-  assert.match(enhancements, /\.members-intro-title\s*\{/);
+  // 2. Authentication Directory is completely removed
+  assert.doesNotMatch(page, /Authentication Directory/);
+  assert.doesNotMatch(page, /members-directory-strip/);
 });
 
 test("Members & Users Redesign: 4 Stat Cards with pastel icon containers and clickable Study Time", async () => {
@@ -63,22 +53,12 @@ test("Members & Users Redesign: 4 Stat Cards with pastel icon containers and cli
   assert.match(enhancements, /\.members-stat-icon-wrap\.icon-amber\s*\{/);
 });
 
-test("Members & Users Redesign: Refined New Members banner", async () => {
-  const [membersManager, enhancements] = await Promise.all([
-    source("app/admin/members/MembersManager.tsx"),
-    source("app/enhancements.css"),
-  ]);
+test("Members & Users: New Members banner completely removed and layout collapses naturally", async () => {
+  const membersManager = await source("app/admin/members/MembersManager.tsx");
 
-  // 1. Conditional banner when new members joined in last 7 days
-  assert.match(membersManager, /newThisWeekCount > 0 && \(/);
-  assert.match(membersManager, /className="members-new-banner"/);
-  assert.match(membersManager, /className="members-new-banner-icon"/);
-  assert.match(membersManager, /className="members-new-banner-content"/);
-
-  // 2. Banner styling in enhancements.css
-  assert.match(enhancements, /\.members-new-banner\s*\{/);
-  assert.match(enhancements, /\.members-new-banner-icon\s*\{/);
-  assert.match(enhancements, /\.members-new-banner-content\s*\{/);
+  // 1. New members banner is completely removed
+  assert.doesNotMatch(membersManager, /className="members-new-banner"/);
+  assert.doesNotMatch(membersManager, /joined this week/);
 });
 
 test("Members & Users Redesign: Default filter values (Role: Students, Sort: Recently active)", async () => {

@@ -2701,6 +2701,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .btn-publish{
   display: inline-flex;
@@ -2752,6 +2753,29 @@
 .btn-review:hover{
   background: #f4f7fb;
   border-color: #c2d2e5;
+}
+.btn-delete{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .16s ease;
+}
+.btn-delete:hover:not(:disabled){
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+.btn-delete:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ========================================================
@@ -4189,6 +4213,29 @@
 }
 .admin-confirm-btn-publish:disabled,
 .admin-confirm-btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-confirm-icon-wrap.delete-icon {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fee2e2 !important;
+}
+
+.admin-confirm-btn-delete {
+  border: 1px solid #b91c1c;
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28);
+}
+
+.admin-confirm-btn-delete:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.admin-confirm-btn-delete:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

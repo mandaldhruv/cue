@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { AdminActionResult, FeedbackRecord, FeedbackStatus, TestimonialRecord } from "../types";
-import { deleteTestimonial, saveTestimonial, updateFeedback, toggleFeedbackPublication } from "./actions";
+import { deleteTestimonial, saveTestimonial, updateFeedback, toggleFeedbackPublication, deleteFeedback } from "./actions";
 
 const emptyTestimonial: TestimonialRecord = {
   id: "",
@@ -47,6 +47,8 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
   const [confirmPublishItem, setConfirmPublishItem] = useState<FeedbackRecord | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [justPublishedId, setJustPublishedId] = useState<string | null>(null);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<FeedbackRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setLocalFeedback(feedback);
@@ -128,6 +130,44 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
       setNotice({ ok: false, message: (err as Error).message || "Could not unpublish testimonial." });
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDeleteItem || deleting) return;
+    const target = confirmDeleteItem;
+    setDeleting(true);
+    try {
+      const result = await deleteFeedback(target.id);
+      if (result.ok) {
+        setLocalFeedback((prev) => prev.filter((item) => item.id !== target.id));
+        if (selectedFeedback?.id === target.id) {
+          setSelectedFeedback(null);
+        }
+        if (justPublishedId === target.id) {
+          setJustPublishedId(null);
+        }
+        setNotice({
+          ok: true,
+          message: "Feedback deleted successfully.",
+        });
+        setConfirmDeleteItem(null);
+        router.refresh();
+      } else {
+        setNotice({
+          ok: false,
+          message: result.message || "Unable to delete this feedback. Please try again.",
+        });
+        setConfirmDeleteItem(null);
+      }
+    } catch (err) {
+      setNotice({
+        ok: false,
+        message: (err as Error).message || "Unable to delete this feedback. Please try again.",
+      });
+      setConfirmDeleteItem(null);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -313,7 +353,7 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
                           <button
                             type="button"
                             className="btn-unpublish"
-                            disabled={pending || publishing}
+                            disabled={pending || publishing || deleting}
                             onClick={() => handleUnpublish(item.id)}
                           >
                             Remove from Public / Unpublish
@@ -322,7 +362,7 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
                           <button
                             type="button"
                             className="btn-publish"
-                            disabled={pending || publishing}
+                            disabled={pending || publishing || deleting}
                             onClick={() => setConfirmPublishItem(item)}
                           >
                             Publish as Testimonial
@@ -334,6 +374,22 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
                           onClick={() => setSelectedFeedback(item)}
                         >
                           Review details →
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-delete"
+                          disabled={pending || publishing || deleting}
+                          onClick={() => setConfirmDeleteItem(item)}
+                          aria-label={`Delete feedback from ${name}`}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
+                          Delete
                         </button>
                       </div>
                     </footer>
@@ -445,20 +501,37 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
                     <span className="feedback-just-published-tag">✓ Live on Testimonials</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className={selectedFeedback.is_published ? "btn-unpublish" : "btn-publish"}
-                  disabled={pending || publishing}
-                  onClick={() => {
-                    if (selectedFeedback.is_published) {
-                      handleUnpublish(selectedFeedback.id);
-                    } else {
-                      setConfirmPublishItem(selectedFeedback);
-                    }
-                  }}
-                >
-                  {selectedFeedback.is_published ? "Remove from Public / Unpublish" : "Publish as Testimonial"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className={selectedFeedback.is_published ? "btn-unpublish" : "btn-publish"}
+                    disabled={pending || publishing || deleting}
+                    onClick={() => {
+                      if (selectedFeedback.is_published) {
+                        handleUnpublish(selectedFeedback.id);
+                      } else {
+                        setConfirmPublishItem(selectedFeedback);
+                      }
+                    }}
+                  >
+                    {selectedFeedback.is_published ? "Remove from Public / Unpublish" : "Publish as Testimonial"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-delete"
+                    disabled={pending || publishing || deleting}
+                    onClick={() => setConfirmDeleteItem(selectedFeedback)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                    Delete feedback
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -649,6 +722,68 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
                 onClick={handleConfirmPublish}
               >
                 {publishing ? "Publishing…" : "Publish"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteItem && (
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => {
+            if (!deleting) setConfirmDeleteItem(null);
+          }}
+        >
+          <div
+            className="admin-confirm-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-delete-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="admin-confirm-icon-wrap delete-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </div>
+            <div className="admin-confirm-header">
+              <h3 id="confirm-delete-title">Delete feedback?</h3>
+              <p>
+                Are you sure you want to permanently delete this feedback from{" "}
+                <b>{confirmDeleteItem.user_name || (confirmDeleteItem.email ? confirmDeleteItem.email.split("@")[0] : "this member")}</b>?
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="admin-confirm-quote-box">
+              <div className="admin-confirm-author">
+                <b>{confirmDeleteItem.user_name || (confirmDeleteItem.email ? confirmDeleteItem.email.split("@")[0] : "Cue Member")}</b>
+                <span>{confirmDeleteItem.role || confirmDeleteItem.student_year || "Student"}</span>
+              </div>
+              <blockquote>“{confirmDeleteItem.message}”</blockquote>
+            </div>
+
+            <div className="admin-confirm-actions">
+              <button
+                type="button"
+                className="admin-confirm-btn-cancel"
+                disabled={deleting}
+                onClick={() => setConfirmDeleteItem(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-confirm-btn-delete"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+              >
+                {deleting ? "Deleting…" : "Delete feedback"}
               </button>
             </div>
           </div>

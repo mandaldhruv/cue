@@ -12,7 +12,7 @@ export default async function AdminFeedbackPage() {
     client.database.from("testimonials").select("id,feedback_id,person_name,designation,institution,quote,headshot_url,headshot_key,image_alt,rating,is_featured,is_published,consent_confirmed,consent_note,sort_order,created_at").order("is_featured", { ascending: false }).order("sort_order", { ascending: true }),
   ]);
   const error = feedbackError ?? testimonialError;
-  return <AdminShell active="/admin/feedback" email={user.email ?? "Admin"} eyebrow="COMMUNITY" title="Feedback & testimonials">
+  return <AdminShell active="/admin/feedback" email={user.email ?? "Admin"} title="Feedback & testimonials">
     {error ? <div className="admin-notice error">{error.message ?? "Community content could not be loaded."}</div> : <FeedbackManager feedback={(feedback ?? []) as FeedbackRecord[]} testimonials={(testimonials ?? []) as TestimonialRecord[]}/>} 
   </AdminShell>;
 }

@@ -182,3 +182,54 @@ export async function toggleFeedbackPublication(id: string, publish: boolean): P
   revalidatePath("/feedback");
   return { ok: true, message: publish ? "Feedback published as testimonial." : "Testimonial removed from public." };
 }
+
+export async function deleteFeedback(id: string): Promise<AdminActionResult> {
+  const session = await adminContext();
+  if (!session) return { ok: false, message: "Your admin session has expired." };
+  if (!id) return { ok: false, message: "Choose a valid feedback submission to delete." };
+
+  const { data: feedbackItem } = await session.client.database
+    .from("feedback_submissions")
+    .select("id, user_name, email")
+    .eq("id", id)
+    .maybeSingle();
+
+  // If there's an associated testimonial created from this feedback, remove it as well
+  const { data: associatedTestimonials } = await session.client.database
+    .from("testimonials")
+    .select("id, headshot_key")
+    .eq("feedback_id", id);
+
+  if (associatedTestimonials && associatedTestimonials.length > 0) {
+    for (const t of associatedTestimonials) {
+      await session.client.database.from("testimonials").delete().eq("id", t.id);
+      if (t.headshot_key) {
+        await session.client.storage.from("cue-testimonials").remove(t.headshot_key);
+      }
+    }
+  }
+
+  const { error } = await session.client.database
+    .from("feedback_submissions")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, message: error.message ?? "Unable to delete this feedback. Please try again." };
+  }
+
+  const authorName = feedbackItem?.user_name || (feedbackItem?.email ? feedbackItem.email.split("@")[0] : "Member");
+  await recordActivity(
+    session.client,
+    session.user.id,
+    "delete",
+    "feedback",
+    id,
+    `Deleted feedback from ${authorName}`
+  );
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/feedback");
+  revalidatePath("/feedback");
+  return { ok: true, message: "Feedback deleted successfully." };
+}
