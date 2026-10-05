@@ -5144,32 +5144,647 @@
   }
 }
 
-@media (max-width: 360px) {
-  .admin-stat-grid article,
-  .admin-stat-grid.actionable article {
-    padding: 8px 10px !important;
-    gap: 8px !important;
-    min-height: 66px !important;
-  }
-  .admin-stat-icon-wrap {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    border-radius: 8px !important;
-  }
-  .admin-stat-info > span,
-  .admin-stat-grid.actionable article .admin-stat-info > span {
-    font-size: 8px !important;
-  }
-  .admin-stat-info > b,
-  .admin-stat-grid.actionable article .admin-stat-info > b {
-    font-size: 18px !important;
-  }
-  .admin-stat-info > p,
-  .admin-stat-grid.actionable article .admin-stat-info > p {
-    font-size: 9.5px !important;
+/* ==========================================================================
+   Admin Feedback & Testimonials Redesign (Reference-Inspired SaaS Layout)
+   Clean, structured, minimal, consistent with Dashboard & Members design language
+   ========================================================================== */
+
+/* 1. Top Statistics Row: 4-Item Responsive Grid */
+.feedback-stat-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  margin-bottom: 22px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.feedback-stat-card {
+  position: relative;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 84px !important;
+  height: auto !important;
+  padding: 14px 18px !important;
+  border-radius: 16px !important;
+  border: 1px solid #dfe5ee !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+}
+
+.feedback-stat-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+.feedback-stat-icon-wrap {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 12px !important;
+  display: grid !important;
+  place-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.feedback-stat-icon-wrap.icon-blue {
+  background: #eff6ff !important;
+  border: 1px solid rgba(37, 99, 235, 0.16) !important;
+  color: #2563eb !important;
+}
+
+.feedback-stat-icon-wrap.icon-amber {
+  background: #fffbeb !important;
+  border: 1px solid rgba(217, 119, 6, 0.16) !important;
+  color: #d97706 !important;
+}
+
+.feedback-stat-icon-wrap.icon-green {
+  background: #ecfdf5 !important;
+  border: 1px solid rgba(16, 185, 129, 0.16) !important;
+  color: #059669 !important;
+}
+
+.feedback-stat-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.feedback-stat-info > span {
+  font: 750 10px var(--font-mono) !important;
+  letter-spacing: .06em !important;
+  color: #64748b !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.feedback-stat-info > b {
+  font-size: 25px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1.15 !important;
+  color: #0f172a !important;
+  margin: 2px 0 1px !important;
+  white-space: nowrap !important;
+}
+
+.feedback-stat-info > p {
+  font-size: 11.5px !important;
+  color: #64748b !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 2. Compact "+ Add Testimonial" CTA Card */
+.feedback-cta-card {
+  position: relative;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 84px !important;
+  height: auto !important;
+  padding: 14px 18px !important;
+  border-radius: 16px !important;
+  border: 1px solid #bfdbfe !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-color .18s ease !important;
+}
+
+.feedback-cta-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: #3b82f6 !important;
+  background: linear-gradient(135deg, #f8faff 0%, #eaf3ff 100%) !important;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12) !important;
+}
+
+.feedback-cta-icon-wrap {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #2563eb !important;
+  display: grid !important;
+  place-items: center !important;
+  flex-shrink: 0 !important;
+  transition: transform .18s ease, background-color .18s ease !important;
+}
+
+.feedback-cta-card:hover .feedback-cta-icon-wrap {
+  transform: scale(1.06);
+  background: #eff6ff !important;
+}
+
+.feedback-cta-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.feedback-cta-title {
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: #1d4ed8 !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+
+.feedback-cta-info > p {
+  font-size: 11.5px !important;
+  color: #64748b !important;
+  margin: 2px 0 0 !important;
+  line-height: 1.35 !important;
+}
+
+/* 3. Segmented Navigation Tabs */
+.feedback-segmented-tabs {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02) !important;
+}
+
+.feedback-tab-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  padding: 8px 15px !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  cursor: pointer !important;
+  transition: all .16s ease !important;
+  outline: none !important;
+}
+
+.feedback-tab-btn:hover:not(.active) {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+}
+
+.feedback-tab-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 750 !important;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08) !important;
+}
+
+.feedback-tab-btn svg {
+  color: currentColor;
+}
+
+.feedback-tab-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 8px !important;
+  border-radius: 99px !important;
+  font: 750 11px var(--font-mono) !important;
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+  line-height: 1 !important;
+  transition: all .16s ease !important;
+}
+
+.feedback-tab-btn.active .feedback-tab-count {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+/* 4. Feedback Management Section & Responsive Header */
+.feedback-management-section,
+.testimonial-management-section {
+  background: #ffffff !important;
+  border: 1px solid #dfe5ee !important;
+  border-radius: 18px !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
+  overflow: hidden !important;
+  margin-bottom: 24px !important;
+}
+
+.feedback-management-header,
+.testimonial-management-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  padding: 20px 24px !important;
+  border-bottom: 1px solid #eef2f6 !important;
+  background: #ffffff !important;
+  flex-wrap: wrap !important;
+}
+
+.feedback-management-title h3,
+.testimonial-management-title h3 {
+  font-size: 17px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+  letter-spacing: -.02em !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+}
+
+.feedback-management-title p,
+.testimonial-management-title p {
+  font-size: 12.5px !important;
+  color: #64748b !important;
+  margin: 4px 0 0 !important;
+  line-height: 1.45 !important;
+}
+
+.feedback-management-filters {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.feedback-management-filters label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.feedback-management-filters label > span {
+  font: 750 9.5px var(--font-mono) !important;
+  color: #64748b !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+}
+
+.feedback-management-filters select {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 30px 0 12px !important;
+  border: 1px solid #dce4ef !important;
+  border-radius: 10px !important;
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  color: #0f172a !important;
+  font-size: 12.5px !important;
+  font-weight: 550 !important;
+  min-width: 145px !important;
+  outline: none !important;
+  transition: border-color .16s ease, box-shadow .16s ease !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02) !important;
+}
+
+.feedback-management-filters select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.testimonial-create-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 9px 16px !important;
+  border-radius: 10px !important;
+  background: #1762d1 !important;
+  border: 1px solid #145bbd !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(23, 98, 209, 0.2) !important;
+  transition: all .16s ease !important;
+}
+
+.testimonial-create-btn:hover {
+  background: #1253b4 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(23, 98, 209, 0.3) !important;
+}
+
+/* 5. Feedback Cards List & Refined Cards */
+.feedback-cards-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: 20px 24px !important;
+  background: #fbfcfe !important;
+}
+
+.feedback-item-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: 18px 20px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease !important;
+}
+
+.feedback-item-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06) !important;
+  transform: translateY(-1px) !important;
+}
+
+.feedback-item-card.is-public {
+  border-left: 3.5px solid #10b981 !important;
+}
+
+.feedback-item-top {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+}
+
+.feedback-item-author {
+  display: flex !important;
+  align-items: center !important;
+  gap: 13px !important;
+}
+
+.feedback-item-avatar {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border: 1px solid rgba(37, 99, 235, 0.16) !important;
+  color: #1d4ed8 !important;
+  font: 800 14px var(--font-mono) !important;
+  display: grid !important;
+  place-items: center !important;
+  letter-spacing: .02em !important;
+  flex-shrink: 0 !important;
+}
+
+.feedback-item-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.feedback-item-name-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.feedback-item-name {
+  color: #0f172a !important;
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.01em !important;
+}
+
+.feedback-item-email {
+  color: #64748b !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+}
+
+.feedback-item-tags {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 2px !important;
+}
+
+.feedback-role-pill {
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font: 650 11px var(--font-mono) !important;
+  letter-spacing: .02em !important;
+}
+
+.feedback-tag-dot {
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+.feedback-pub-pill {
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  font: 750 10.5px var(--font-mono) !important;
+  letter-spacing: .03em !important;
+}
+
+.feedback-pub-pill.pub-live {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.feedback-pub-pill.pub-private {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.feedback-item-rating {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  background: #fffdf5 !important;
+  border: 1px solid #fef3c7 !important;
+}
+
+.stars-filled {
+  color: #f59e0b !important;
+  font-size: 15px !important;
+  letter-spacing: 2px !important;
+}
+
+.stars-empty {
+  color: #e2e8f0 !important;
+  font-size: 15px !important;
+  letter-spacing: 2px !important;
+}
+
+.rating-score {
+  font: 750 12px var(--font-mono) !important;
+  color: #b45309 !important;
+}
+
+.feedback-item-quote {
+  margin: 0 !important;
+  padding: 13px 18px !important;
+  border-left: 3px solid #3b82f6 !important;
+  border-radius: 0 10px 10px 0 !important;
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  font-style: normal !important;
+}
+
+.feedback-item-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  padding-top: 4px !important;
+}
+
+.feedback-item-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+}
+
+.feedback-item-date {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 550 !important;
+}
+
+.feedback-content-flag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  color: #b91c1c !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+}
+
+/* 6. Responsive Breakpoint Harmonization for Feedback */
+@media (max-width: 1180px) {
+  .feedback-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
   }
 }
+
+@media (max-width: 768px) {
+  .feedback-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .feedback-stat-card,
+  .feedback-cta-card {
+    padding: 12px 14px !important;
+    min-height: 76px !important;
+    border-radius: 14px !important;
+  }
+  .feedback-stat-icon-wrap,
+  .feedback-cta-icon-wrap {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 10px !important;
+  }
+  .feedback-stat-info > b {
+    font-size: 21px !important;
+  }
+  .feedback-management-header,
+  .testimonial-management-header {
+    padding: 16px 18px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  .feedback-management-filters {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .feedback-management-filters select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .feedback-cards-list {
+    padding: 14px 16px !important;
+  }
+  .feedback-item-card {
+    padding: 15px !important;
+  }
+  .feedback-item-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .feedback-actions-group {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .feedback-stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+  .feedback-segmented-tabs {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .feedback-tab-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 8px 8px !important;
+    font-size: 12px !important;
+    gap: 6px !important;
+  }
+  .feedback-tab-btn svg {
+    display: none !important;
+  }
+  .feedback-management-filters {
+    grid-template-columns: 1fr !important;
+  }
+  .feedback-actions-group button {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+}
+
 
 
 

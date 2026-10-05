@@ -229,35 +229,100 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
 
   return (
     <>
-      <div className="community-overview">
-        <div>
-          <span>NEW FEEDBACK</span>
-          <b>{localFeedback.filter((item) => item.status === "new").length}</b>
-          <small>Waiting for review</small>
-        </div>
-        <div>
-          <span>AVERAGE RATING</span>
-          <b>{localFeedback.length ? (localFeedback.reduce((sum, item) => sum + item.rating, 0) / localFeedback.length).toFixed(1) : "N/A"}</b>
-          <small>Student experience</small>
-        </div>
-        <div>
-          <span>LIVE TESTIMONIALS</span>
-          <b>{testimonials.filter((item) => item.is_published).length}</b>
-          <small>Visible publicly</small>
-        </div>
-        <button onClick={() => { setTab("testimonials"); setCreating(true); setEditing(null); }}>
-          + Add testimonial
-        </button>
-      </div>
+      {/* Redesigned 4-Card Responsive Metric Grid */}
+      <section className="feedback-stat-grid" aria-label="Feedback metrics overview">
+        <article className="feedback-stat-card">
+          <div className="feedback-stat-icon-wrap icon-blue" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <line x1="8" y1="10" x2="16" y2="10" />
+              <line x1="8" y1="14" x2="13" y2="14" />
+            </svg>
+          </div>
+          <div className="feedback-stat-info">
+            <span>NEW FEEDBACK</span>
+            <b>{localFeedback.filter((item) => item.status === "new").length}</b>
+            <p>Waiting for review</p>
+          </div>
+        </article>
 
-      <div className="community-tabs">
-        <button className={tab === "feedback" ? "active" : ""} onClick={() => setTab("feedback")}>
-          <span>User Feedback</span>
-          <b>{localFeedback.length}</b>
+        <article className="feedback-stat-card">
+          <div className="feedback-stat-icon-wrap icon-amber" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
+          <div className="feedback-stat-info">
+            <span>AVERAGE RATING</span>
+            <b>{localFeedback.length ? (localFeedback.reduce((sum, item) => sum + item.rating, 0) / localFeedback.length).toFixed(1) : "N/A"}</b>
+            <p>Student experience</p>
+          </div>
+        </article>
+
+        <article className="feedback-stat-card">
+          <div className="feedback-stat-icon-wrap icon-green" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+              <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+            </svg>
+          </div>
+          <div className="feedback-stat-info">
+            <span>LIVE TESTIMONIALS</span>
+            <b>{testimonials.filter((item) => item.is_published).length}</b>
+            <p>Visible publicly</p>
+          </div>
+        </article>
+
+        <button
+          type="button"
+          className="feedback-cta-card"
+          onClick={() => {
+            setTab("testimonials");
+            setCreating(true);
+            setEditing(null);
+          }}
+          aria-label="Add new testimonial"
+        >
+          <div className="feedback-cta-icon-wrap icon-blue" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </div>
+          <div className="feedback-cta-info">
+            <span className="feedback-cta-title">+ Add testimonial</span>
+            <p>Create curated quote</p>
+          </div>
         </button>
-        <button className={tab === "testimonials" ? "active" : ""} onClick={() => setTab("testimonials")}>
+      </section>
+
+      {/* Segmented Navigation Control */}
+      <div className="feedback-segmented-tabs" role="tablist" aria-label="Feedback views">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "feedback"}
+          className={`feedback-tab-btn ${tab === "feedback" ? "active" : ""}`}
+          onClick={() => setTab("feedback")}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>User Feedback</span>
+          <span className="feedback-tab-count">{localFeedback.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "testimonials"}
+          className={`feedback-tab-btn ${tab === "testimonials" ? "active" : ""}`}
+          onClick={() => setTab("testimonials")}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+            <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+          </svg>
           <span>Public Testimonials</span>
-          <b>{testimonials.length}</b>
+          <span className="feedback-tab-count">{testimonials.length}</span>
         </button>
       </div>
 
@@ -269,13 +334,13 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
       )}
 
       {tab === "feedback" ? (
-        <section className="feedback-inbox">
-          <div className="feedback-inbox-bar">
-            <div>
-              <b>User Feedback Management</b>
-              <span>Review feedback from authenticated students & educators. Publish any entry as a public testimonial.</span>
+        <section className="feedback-management-section">
+          <div className="feedback-management-header">
+            <div className="feedback-management-title">
+              <h3>User Feedback Management</h3>
+              <p>Review feedback from authenticated students &amp; educators. Publish any entry as a public testimonial.</p>
             </div>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <div className="feedback-management-filters">
               <label>
                 <span>VISIBILITY</span>
                 <select value={pubFilter} onChange={(event) => setPubFilter(event.target.value as "all" | "public" | "private")}>
@@ -298,54 +363,77 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "14px", marginTop: "14px" }}>
+          <div className="feedback-cards-list">
             {visibleFeedback.length ? (
               visibleFeedback.map((item) => {
                 const name = item.user_name || (item.email ? item.email.split("@")[0] : "Cue Member");
                 const role = item.role || item.student_year || "Student";
                 return (
-                  <article key={item.id} className={`feedback-admin-card ${item.is_published ? "is-public" : "is-private"}`}>
-                    <header className="feedback-card-top">
-                      <div className="feedback-author">
-                        <div className="feedback-author-avatar">
+                  <article key={item.id} className={`feedback-admin-card feedback-item-card ${item.is_published ? "is-public" : "is-private"}`}>
+                    <header className="feedback-card-top feedback-item-top">
+                      <div className="feedback-author feedback-item-author">
+                        <div className="feedback-author-avatar feedback-item-avatar" aria-hidden="true">
                           {initials(name)}
                         </div>
-                        <div className="feedback-author-meta">
-                          <b className="feedback-author-name">{name}</b>
-                          <span className="feedback-author-email">{item.email || "No email available"}</span>
-                          <div className="feedback-author-tags">
-                            <span className="feedback-role-badge">{role}</span>
-                            <span className={`feedback-pub-badge ${item.is_published ? "pub-live" : "pub-private"}`}>
-                              {item.is_published ? "✓ Published" : "○ Not Published"}
-                            </span>
+                        <div className="feedback-author-meta feedback-item-meta">
+                          <div className="feedback-name-row">
+                            <b className="feedback-author-name feedback-item-name">{name}</b>
                             {item.id === justPublishedId && (
                               <span className="feedback-just-published-tag">
                                 ✓ Published Live!
                               </span>
                             )}
+                          </div>
+                          <span className="feedback-author-email feedback-item-email">{item.email || "No email available"}</span>
+                          <div className="feedback-author-tags feedback-item-tags">
+                            <span className="feedback-role-badge feedback-role-pill">{role}</span>
+                            <span className="feedback-tag-dot">•</span>
+                            <span className={`feedback-pub-badge feedback-pub-pill ${item.is_published ? "pub-live" : "pub-private"}`}>
+                              {item.is_published ? "✓ Published" : "○ Not Published"}
+                            </span>
+                            <span className="feedback-tag-dot">•</span>
                             <span className={`feedback-status-pill ${item.status}`}>{item.status}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="feedback-rating-stars" aria-label={`${item.rating} stars`}>
-                        {"★".repeat(item.rating)}{"☆".repeat(Math.max(0, 5 - item.rating))}
+
+                      <div className="feedback-rating-stars feedback-item-rating" aria-label={`${item.rating} out of 5 stars`}>
+                        <span className="rating-stars" aria-hidden="true">
+                          <span className="stars-filled">{"★".repeat(item.rating)}</span>
+                          <span className="stars-empty">{"★".repeat(Math.max(0, 5 - item.rating))}</span>
+                        </span>
+                        <span className="rating-score">{item.rating}.0</span>
                       </div>
                     </header>
 
-                    <blockquote className="feedback-quote">
+                    <blockquote className="feedback-quote feedback-item-quote">
                       “{item.message}”
                     </blockquote>
 
-                    <footer className="feedback-card-foot">
-                      <div className="feedback-date-info">
-                        <span>
+                    <footer className="feedback-card-foot feedback-item-footer">
+                      <div className="feedback-date-info feedback-item-info">
+                        <span className="feedback-item-date">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
                           Submitted: {new Date(item.created_at).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
                           })}
                         </span>
-                        {item.is_content_issue && <b className="content-flag">⚑ Content issue reported</b>}
+                        {item.is_content_issue && (
+                          <span className="content-flag feedback-content-flag">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                              <line x1="4" y1="22" x2="4" y2="15" />
+                            </svg>
+                            Content issue reported
+                          </span>
+                        )}
                       </div>
 
                       <div className="feedback-actions-group">
@@ -405,13 +493,17 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
           </div>
         </section>
       ) : (
-        <section className="testimonial-admin-list">
-          <div className="admin-toolbar">
-            <div>
-              <b>Curated voices</b>
-              <span>Only consented, published testimonials appear on the public Feedback page.</span>
+        <section className="testimonial-admin-list testimonial-management-section">
+          <div className="admin-toolbar testimonial-management-header">
+            <div className="testimonial-management-title">
+              <h3>Curated voices</h3>
+              <p>Only consented, published testimonials appear on the public Feedback page.</p>
             </div>
-            <button onClick={() => { setCreating(true); setEditing(null); }}>
+            <button
+              type="button"
+              className="testimonial-create-btn"
+              onClick={() => { setCreating(true); setEditing(null); }}
+            >
               + Add testimonial
             </button>
           </div>
