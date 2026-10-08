@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "../../components";
-import { getAdminSession } from "../../lib/insforge/server";
+import { getAdminSession } from "../../lib/supabase/server";
 import AdminLoginForm from "./AdminLoginForm";
 
 export const dynamic = "force-dynamic";

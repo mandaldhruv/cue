@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createInsForgeServerClient } from "../../../lib/insforge/server";
+import { createServerClient } from "../../../lib/supabase/server";
 import { isAdminRoute } from "../../../lib/study-tracking";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const client = await createInsForgeServerClient();
-    const { data: authData, error: authError } = await client.auth.getCurrentUser();
+    const client = await createServerClient();
+    // Validates auth: client.auth.getCurrentUser()
+    const { data: authData, error: authError } = await client.auth.getUser();
     const user = authData?.user ?? null;
 
     if (authError || !user) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let payload: Record<string, any> = {};
+    let payload: Record<string, unknown> = {};
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const resourceId = isAdmin ? null : (payload.resourceId ? String(payload.resourceId).slice(0, 100) : null);
     const metadata = typeof payload.metadata === "object" && payload.metadata !== null ? payload.metadata : {};
 
-    const { data, error } = await client.database.rpc("record_cue_study_heartbeat", {
+    const { data, error } = await client.rpc("record_cue_study_heartbeat", {
       p_session_token: sessionToken,
       p_delta_seconds: deltaSeconds,
       p_page_path: pagePath,
@@ -78,9 +79,9 @@ export async function POST(request: NextRequest) {
       { ok: true, data },
       { headers: { "Cache-Control": "private, no-store, max-age=0" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { ok: false, error: err?.message || "Internal server error" },
+      { ok: false, error: (err as Error)?.message || "Internal server error" },
       { status: 500, headers: { "Cache-Control": "private, no-store, max-age=0" } }
     );
   }

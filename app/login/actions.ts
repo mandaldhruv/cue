@@ -1,8 +1,8 @@
 "use server";
 
-import { createAuthActions } from "@insforge/sdk/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { createServerClient } from "../lib/supabase/server";
 import { notifyAdminNewMember } from "../lib/email/admin-notifications";
 
 export type LoginState = {
@@ -13,9 +13,15 @@ export type LoginState = {
 
 function friendlyError(message?: string) {
   const text = (message || "").toLowerCase();
-  if (text.includes("invalid") || text.includes("password")) return "That email and password do not match. Please try again.";
-  if (text.includes("verify")) return "Please verify your email before signing in.";
-  if (text.includes("already")) return "An account with this email already exists. Try signing in instead.";
+  if (text.includes("invalid") || text.includes("password") || text.includes("credentials")) {
+    return "That email and password do not match. Please try again.";
+  }
+  if (text.includes("verify") || text.includes("confirm")) {
+    return "Please verify your email before signing in.";
+  }
+  if (text.includes("already") || text.includes("exists")) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
   return "We could not complete that request. Please try again.";
 }
 
@@ -24,8 +30,8 @@ export async function signInAction(_: LoginState, formData: FormData): Promise<L
   const password = String(formData.get("password") || "");
   if (!email || !password) return { status: "error", message: "Enter your email and password.", email };
   try {
-    const auth = createAuthActions({ cookies: await cookies() });
-    const { data, error } = await auth.signInWithPassword({ email, password });
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data?.user) return { status: "error", message: friendlyError(error?.message), email };
     return { status: "success", message: "Welcome back to Cue.", email };
   } catch {
@@ -40,10 +46,16 @@ export async function signUpAction(_: LoginState, formData: FormData): Promise<L
   if (!name || !email || !password) return { status: "error", message: "Enter your name, email and password.", email };
   if (password.length < 6) return { status: "error", message: "Use at least 6 characters for your password.", email };
   try {
-    const auth = createAuthActions({ cookies: await cookies() });
-    const { data, error } = await auth.signUp({ name, email, password });
-    if (error || !data) return { status: "error", message: friendlyError(error?.message), email };
-    if (data.user?.emailVerified) {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    });
+    if (error || !data?.user) return { status: "error", message: friendlyError(error?.message), email };
+    if (data.user.confirmed_at || data.user.email_confirmed_at) {
       void notifyAdminNewMember({
         userId: data.user.id,
         name: name || "Student",
@@ -65,12 +77,22 @@ export async function verifyEmailAction(_: LoginState, formData: FormData): Prom
   const otp = String(formData.get("otp") || "").replace(/\D/g, "").slice(0, 6);
   if (otp.length !== 6) return { status: "verify", message: "Enter the complete 6-digit code.", email };
   try {
-    const auth = createAuthActions({ cookies: await cookies() });
-    const { data, error } = await auth.verifyEmail({ email, otp });
-    if (error || !data?.user) return { status: "verify", message: error?.message || "That code is incorrect or has expired.", email };
+    const supabase = await createServerClient();
+    // verifyEmail using Supabase verifyOtp
+    let { data, error } = await supabase.auth.verifyOtp({ email, token: otp, type: "signup" });
+    if (error) {
+      const fallback = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
+      if (!fallback.error && fallback.data?.user) {
+        data = fallback.data;
+        error = null;
+      }
+    }
+    if (error || !data?.user) {
+      return { status: "verify", message: error?.message || "That code is incorrect or has expired.", email };
+    }
     const userName =
-      ((data.user.profile as Record<string, string> | undefined)?.name) ||
-      ((data.user.metadata as Record<string, string> | undefined)?.name) ||
+      (data.user.user_metadata?.name as string | undefined) ||
+      (data.user.user_metadata?.full_name as string | undefined) ||
       email.split("@")[0] ||
       "Student";
     void notifyAdminNewMember({
@@ -93,21 +115,34 @@ function safeNext(value: string) {
 
 export async function googleSignInAction(formData: FormData) {
   const cookieStore = await cookies();
-  const auth = createAuthActions({ cookies: cookieStore });
+  const supabase = await createServerClient();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
   const next = safeNext(String(formData.get("next") || "/"));
-  const { data, error } = await auth.signInWithOAuth("google", {
-    redirectTo: `${siteUrl}/api/auth/callback`,
-    skipBrowserRedirect: true,
-    additionalParams: { prompt: "select_account" },
+
+  cookieStore.set("cue_auth_return", next, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: siteUrl.startsWith("https"),
+    path: "/",
+    maxAge: 600,
   });
-  if (error || !data?.url || !data.codeVerifier) redirect(`/login?error=google&next=${encodeURIComponent(next)}`);
-  cookieStore.set("insforge_code_verifier", data.codeVerifier, { httpOnly: true, sameSite: "lax", secure: siteUrl.startsWith("https"), path: "/", maxAge: 600 });
-  cookieStore.set("cue_auth_return", next, { httpOnly: true, sameSite: "lax", secure: siteUrl.startsWith("https"), path: "/", maxAge: 600 });
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${siteUrl}/api/auth/callback`,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+
+  if (error || !data?.url) {
+    redirect(`/login?error=google&next=${encodeURIComponent(next)}`);
+  }
+
   redirect(data.url);
 }
 
 export async function signOutAction() {
-  const auth = createAuthActions({ cookies: await cookies() });
-  await auth.signOut();
+  const supabase = await createServerClient();
+  await supabase.auth.signOut();
 }

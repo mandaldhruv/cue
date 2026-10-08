@@ -1,9 +1,9 @@
 "use client";
 
-import { createClient } from "@insforge/sdk";
 import { useEffect, useMemo, useState } from "react";
 import PdfCanvasPreview from "./PdfCanvasPreview";
 import { useAuth } from "../auth/AuthProvider";
+import { createBrowserClient } from "../lib/supabase/client";
 
 type PublicSubject = { id: string; name: string; slug: string; short_code: string; semester_number: number; accent_color: string };
 type PublicPaper = { id: string; subject_id: string; title: string; description: string; academic_year: number; exam_type: string; file_key: string; file_name: string | null; file_size_bytes: number | null };
@@ -11,7 +11,7 @@ function sizeLabel(value: number | null) { if (!value) return "PDF"; return valu
 
 export default function PyqLibrary({ subjectSlug, compact = false }: { subjectSlug?: string; compact?: boolean }) {
   const { requireLogin } = useAuth();
-  const isConfigured = Boolean(process.env.NEXT_PUBLIC_INSFORGE_URL && process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY);
+  const isConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const [subjects, setSubjects] = useState<PublicSubject[]>([]);
   const [papers, setPapers] = useState<PublicPaper[]>([]);
   const [subjectId, setSubjectId] = useState("all");
@@ -22,20 +22,33 @@ export default function PyqLibrary({ subjectSlug, compact = false }: { subjectSl
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
-    if (!baseUrl || !anonKey) return;
-    const client = createClient({ baseUrl, anonKey });
+    const supabase = createBrowserClient();
     let active = true;
     async function load() {
-      const { data: subjectData, error: subjectError } = await client.database.from("subjects").select("id,name,slug,short_code,semester_number,accent_color").eq("course_code", "BMS").eq("is_published", true).order("semester_number", { ascending: true }).order("sort_order", { ascending: true });
+      const { data: subjectData, error: subjectError } = await supabase
+        .from("subjects")
+        .select("id,name,slug,short_code,semester_number,accent_color")
+        .eq("course_code", "BMS")
+        .eq("is_published", true)
+        .order("semester_number", { ascending: true })
+        .order("sort_order", { ascending: true });
       if (!active) return;
-      if (subjectError) { setError("The paper library could not be loaded right now."); setLoading(false); return; }
+      if (subjectError) {
+        setError("The paper library could not be loaded right now.");
+        setLoading(false);
+        return;
+      }
       const availableSubjects = (subjectData ?? []) as PublicSubject[];
       setSubjects(availableSubjects);
       const matched = subjectSlug ? availableSubjects.find((item) => item.slug === subjectSlug) : null;
       if (matched) setSubjectId(matched.id);
-      const query = client.database.from("content_items").select("id,subject_id,title,description,academic_year,exam_type,file_key,file_name,file_size_bytes").eq("content_type", "pyq").eq("is_published", true).order("academic_year", { ascending: false }).order("sort_order", { ascending: true });
+      const query = supabase
+        .from("content_items")
+        .select("id,subject_id,title,description,academic_year,exam_type,file_key,file_name,file_size_bytes")
+        .eq("content_type", "pyq")
+        .eq("is_published", true)
+        .order("academic_year", { ascending: false })
+        .order("sort_order", { ascending: true });
       const { data: paperData, error: paperError } = matched ? await query.eq("subject_id", matched.id) : await query;
       if (!active) return;
       if (paperError) setError("Published papers could not be loaded right now.");
@@ -51,29 +64,56 @@ export default function PyqLibrary({ subjectSlug, compact = false }: { subjectSl
   const byYear = useMemo(() => visible.reduce<Record<number, PublicPaper[]>>((groups, paper) => { (groups[paper.academic_year] ??= []).push(paper); return groups; }, {}), [visible]);
 
   async function getBlob(paper: PublicPaper) {
-    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
-    if (!baseUrl || !anonKey) throw new Error("Storage is not configured.");
-    const { data, error: downloadError } = await createClient({ baseUrl, anonKey }).storage.from("cue-pyqs").download(paper.file_key);
-    if (downloadError || !data) throw new Error(downloadError?.message ?? "Download failed.");
+    if (!paper.file_key) {
+      throw new Error("This paper does not have an attached PDF file.");
+    }
+    const supabase = createBrowserClient();
+    const { data, error: downloadError } = await supabase.storage
+      .from("cue-pyqs")
+      .download(paper.file_key);
+    if (downloadError || !data) {
+      throw new Error(downloadError?.message ?? "Download failed.");
+    }
     return data;
   }
 
   async function openPreview(paper: PublicPaper) {
-    setWorkingId(paper.id); setError("");
+    setWorkingId(paper.id);
+    setError("");
     try {
       const blob = await getBlob(paper);
       setPreview({ paper, blob: new Blob([blob], { type: "application/pdf" }) });
     }
-    catch { setError("This PDF could not be opened. Please try again."); }
+    catch (err: unknown) {
+      const msg = err instanceof Error && err.message.toLowerCase().includes("not found")
+        ? "This paper is currently being updated in the archive. Please try again soon."
+        : "This PDF could not be opened. Please try again.";
+      setError(msg);
+    }
     finally { setWorkingId(""); }
   }
 
   async function download(paper: PublicPaper) {
     if (!(await requireLogin())) return;
-    setWorkingId(paper.id); setError("");
-    try { const blob = await getBlob(paper); const url = URL.createObjectURL(new Blob([blob], { type: "application/pdf" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = paper.file_name || `${paper.title}.pdf`; document.body.appendChild(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 60_000); }
-    catch { setError("This PDF could not be downloaded. Please try again."); }
+    setWorkingId(paper.id);
+    setError("");
+    try {
+      const blob = await getBlob(paper);
+      const url = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = paper.file_name || `${paper.title}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+    catch (err: unknown) {
+      const msg = err instanceof Error && err.message.toLowerCase().includes("not found")
+        ? "This paper is currently being updated in the archive. Please try again soon."
+        : "This PDF could not be downloaded. Please try again.";
+      setError(msg);
+    }
     finally { setWorkingId(""); }
   }
 

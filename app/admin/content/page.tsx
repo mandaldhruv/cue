@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireAdminSession } from "../../lib/insforge/server";
+import { requireAdminSession } from "../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 

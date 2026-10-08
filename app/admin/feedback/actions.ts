@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getAdminSession } from "../../lib/insforge/server";
+import { getAdminSession } from "../../lib/supabase/server";
 import type { AdminActionResult, FeedbackStatus } from "../types";
 
 const text = (formData: FormData, key: string) => String(formData.get(key) ?? "").trim();
@@ -12,7 +12,7 @@ async function adminContext() {
 }
 
 async function recordActivity(client: NonNullable<Awaited<ReturnType<typeof adminContext>>>["client"], adminUserId: string, action: string, entityType: string, entityId: string | null, summary: string) {
-  const { error } = await client.database.from("admin_activity").insert([{
+  const { error } = await client.from("admin_activity").insert([{
     admin_user_id: adminUserId,
     action,
     entity_type: entityType,
@@ -28,7 +28,7 @@ export async function updateFeedback(formData: FormData): Promise<AdminActionRes
   const id = text(formData, "id");
   const status = text(formData, "status") as FeedbackStatus;
   if (!id || !["new", "reviewed", "resolved", "archived"].includes(status)) return { ok: false, message: "Choose a valid feedback status." };
-  const { error } = await session.client.database.from("feedback_submissions").update({ status, admin_note: text(formData, "admin_note") }).eq("id", id);
+  const { error } = await session.client.from("feedback_submissions").update({ status, admin_note: text(formData, "admin_note") }).eq("id", id);
   if (error) return { ok: false, message: error.message ?? "Feedback could not be updated." };
   await recordActivity(session.client, session.user.id, "status", "feedback", id, `Feedback marked ${status}`);
   revalidatePath("/admin");
@@ -62,12 +62,14 @@ export async function saveTestimonial(formData: FormData): Promise<AdminActionRe
     consent_note: text(formData, "consent_note"),
     sort_order: Math.max(0, Number(formData.get("sort_order") ?? 0)),
   };
-  const query = id ? session.client.database.from("testimonials").update(payload).eq("id", id).select("id") : session.client.database.from("testimonials").insert([payload]).select("id");
+  const query = id ? session.client.from("testimonials").update(payload).eq("id", id).select("id") : session.client.from("testimonials").insert([payload]).select("id");
   const { data, error } = await query;
   if (error) return { ok: false, message: error.message ?? "Testimonial could not be saved." };
   const entityId = id || data?.[0]?.id || null;
   const oldHeadshotKey = text(formData, "old_headshot_key");
-  if (oldHeadshotKey && oldHeadshotKey !== payload.headshot_key) await session.client.storage.from("cue-testimonials").remove(oldHeadshotKey);
+  if (oldHeadshotKey && oldHeadshotKey !== payload.headshot_key) {
+    await session.client.storage.from("cue-testimonials").remove([oldHeadshotKey]);
+  }
   await recordActivity(session.client, session.user.id, id ? "update" : "create", "testimonial", entityId, `${personName} · ${isPublished ? "published" : "draft"}`);
   revalidatePath("/admin");
   revalidatePath("/admin/feedback");
@@ -78,10 +80,10 @@ export async function saveTestimonial(formData: FormData): Promise<AdminActionRe
 export async function deleteTestimonial(id: string, headshotKey: string): Promise<AdminActionResult> {
   const session = await adminContext();
   if (!session) return { ok: false, message: "Your admin session has expired." };
-  const { data: testimonial } = await session.client.database.from("testimonials").select("person_name").eq("id", id).limit(1);
-  const { error } = await session.client.database.from("testimonials").delete().eq("id", id);
+  const { data: testimonial } = await session.client.from("testimonials").select("person_name").eq("id", id).limit(1);
+  const { error } = await session.client.from("testimonials").delete().eq("id", id);
   if (error) return { ok: false, message: error.message ?? "Testimonial could not be deleted." };
-  if (headshotKey) await session.client.storage.from("cue-testimonials").remove(headshotKey);
+  if (headshotKey) await session.client.storage.from("cue-testimonials").remove([headshotKey]);
   await recordActivity(session.client, session.user.id, "delete", "testimonial", id, testimonial?.[0]?.person_name ?? "Deleted testimonial");
   revalidatePath("/admin");
   revalidatePath("/admin/feedback");
@@ -94,7 +96,7 @@ export async function toggleFeedbackPublication(id: string, publish: boolean): P
   if (!session) return { ok: false, message: "Your admin session has expired." };
   if (!id) return { ok: false, message: "Choose a valid feedback submission." };
 
-  const { data: feedbackItem, error: fetchErr } = await session.client.database
+  const { data: feedbackItem, error: fetchErr } = await session.client
     .from("feedback_submissions")
     .select("id,rating,category,message,email,user_name,role,student_year")
     .eq("id", id)
@@ -108,14 +110,14 @@ export async function toggleFeedbackPublication(id: string, publish: boolean): P
   const role = (feedbackItem.role || feedbackItem.student_year || "Student").trim();
 
   if (publish) {
-    const { data: existingTestimonial } = await session.client.database
+    const { data: existingTestimonial } = await session.client
       .from("testimonials")
       .select("id")
       .eq("feedback_id", id)
       .maybeSingle();
 
     if (existingTestimonial) {
-      const { error: updateError } = await session.client.database
+      const { error: updateError } = await session.client
         .from("testimonials")
         .update({
           person_name: name,
@@ -133,11 +135,11 @@ export async function toggleFeedbackPublication(id: string, publish: boolean): P
         return { ok: false, message: updateError.message ?? "Could not publish testimonial." };
       }
     } else {
-      const { count } = await session.client.database
+      const { count } = await session.client
         .from("testimonials")
         .select("*", { count: "exact", head: true });
 
-      const { error: insertError } = await session.client.database.from("testimonials").insert([{
+      const { error: insertError } = await session.client.from("testimonials").insert([{
         feedback_id: id,
         person_name: name,
         designation: role,
@@ -157,19 +159,19 @@ export async function toggleFeedbackPublication(id: string, publish: boolean): P
       }
     }
 
-    await session.client.database
+    await session.client
       .from("feedback_submissions")
       .update({ is_published: true, status: "reviewed" })
       .eq("id", id);
 
     await recordActivity(session.client, session.user.id, "visibility", "feedback", id, `Published ${name}’s feedback as testimonial`);
   } else {
-    await session.client.database
+    await session.client
       .from("feedback_submissions")
       .update({ is_published: false })
       .eq("id", id);
 
-    await session.client.database
+    await session.client
       .from("testimonials")
       .update({ is_published: false })
       .eq("feedback_id", id);
@@ -188,28 +190,28 @@ export async function deleteFeedback(id: string): Promise<AdminActionResult> {
   if (!session) return { ok: false, message: "Your admin session has expired." };
   if (!id) return { ok: false, message: "Choose a valid feedback submission to delete." };
 
-  const { data: feedbackItem } = await session.client.database
+  const { data: feedbackItem } = await session.client
     .from("feedback_submissions")
     .select("id, user_name, email")
     .eq("id", id)
     .maybeSingle();
 
   // If there's an associated testimonial created from this feedback, remove it as well
-  const { data: associatedTestimonials } = await session.client.database
+  const { data: associatedTestimonials } = await session.client
     .from("testimonials")
     .select("id, headshot_key")
     .eq("feedback_id", id);
 
   if (associatedTestimonials && associatedTestimonials.length > 0) {
     for (const t of associatedTestimonials) {
-      await session.client.database.from("testimonials").delete().eq("id", t.id);
+      await session.client.from("testimonials").delete().eq("id", t.id);
       if (t.headshot_key) {
-        await session.client.storage.from("cue-testimonials").remove(t.headshot_key);
+        await session.client.storage.from("cue-testimonials").remove([t.headshot_key]);
       }
     }
   }
 
-  const { error } = await session.client.database
+  const { error } = await session.client
     .from("feedback_submissions")
     .delete()
     .eq("id", id);

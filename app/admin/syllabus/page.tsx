@@ -1,4 +1,4 @@
-import { requireAdminSession } from "../../lib/insforge/server";
+import { requireAdminSession } from "../../lib/supabase/server";
 import AdminShell from "../AdminShell";
 import type { ContentRecord, SubjectRecord } from "../types";
 import SyllabusManager from "./SyllabusManager";
@@ -9,13 +9,13 @@ export default async function AdminSyllabusPage() {
   const { user, client } = await requireAdminSession();
 
   const [{ data: subjects, error: subjectError }, { data: syllabus, error: syllabusError }] = await Promise.all([
-    client.database
+    client
       .from("subjects")
       .select("id,name,slug,short_code,course_code,semester_number,description,accent_color,units_count,resources_count,sort_order,is_published")
       .eq("course_code", "BMS")
       .order("semester_number", { ascending: true })
       .order("sort_order", { ascending: true }),
-    client.database
+    client
       .from("content_items")
       .select("id,subject_id,content_type,title,description,body,academic_year,file_url,file_key,sort_order,is_published")
       .eq("content_type", "syllabus_unit")

@@ -1,6 +1,6 @@
 "use client";
 
-import { createBrowserClient } from "@insforge/sdk/ssr";
+import { createBrowserClient } from "../../lib/supabase/client";
 import { useMemo, useRef, useState, useTransition } from "react";
 import AdminScopePicker from "../AdminScopePicker";
 import { deletePyq, savePyq, setPyqPublished } from "../content-actions";
@@ -53,21 +53,29 @@ export default function PyqManager({ subjects, papers }: { subjects: SubjectReco
         if (file.size > 25 * 1024 * 1024) throw new Error("Keep each PDF under 25 MB.");
         const key = `${subjectId}/${formData.get("academic_year")}/${stableSubmissionId}-${safeName(file.name)}`;
         const client = createBrowserClient();
-        const { data, error } = await withTimeout(client.storage.from("cue-pyqs").upload(key, file), 90_000, "The PDF upload timed out. Check your connection and try again. The same paper will not be duplicated.");
+        const { data, error } = await withTimeout(
+          client.storage.from("cue-pyqs").upload(key, file, {
+            contentType: "application/pdf",
+            upsert: false,
+          }),
+          90_000,
+          "The PDF upload timed out. Check your connection and try again. The same paper will not be duplicated."
+        );
         if (error || !data) throw new Error(error?.message ?? "PDF upload failed. Please try again.");
-        uploadedKey = data.key;
-        formData.set("file_url", data.url);
-        formData.set("file_key", data.key);
+        uploadedKey = data.path;
+        const fileUrl = client.storage.from("cue-pyqs").getPublicUrl(data.path).data.publicUrl;
+        formData.set("file_url", fileUrl);
+        formData.set("file_key", data.path);
         formData.set("file_name", file.name);
         formData.set("file_size_bytes", String(file.size));
       }
-      // The PDF is already stored directly in InsForge. Never send its binary
+      // The PDF is already stored directly in Supabase Storage. Never send its binary
       // through the Next.js server action as that can exceed the action body
       // limit and turn an otherwise successful upload into a 500 response.
       formData.delete("pdf");
       setUploadStage("saving");
       const result = await withTimeout(savePyq(formData), 30_000, "The PDF uploaded, but saving took too long. Please try once more; the retry is duplicate-safe.");
-      if (!result.ok && uploadedKey) await withTimeout(createBrowserClient().storage.from("cue-pyqs").remove(uploadedKey), 15_000, "").catch(() => undefined);
+      if (!result.ok && uploadedKey) await withTimeout(createBrowserClient().storage.from("cue-pyqs").remove([uploadedKey]), 15_000, "").catch(() => undefined);
       setNotice(result.ok ? { ok: true, message: `✓ ${active?.id ? "Paper updated successfully." : "PDF uploaded and saved successfully."}` } : result);
       if (result.ok) { setSelectedFileName(""); setEditing(null); setCreating(false); setSubmissionId(""); }
     } catch (error) {

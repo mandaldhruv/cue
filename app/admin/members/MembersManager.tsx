@@ -141,6 +141,7 @@ export default function MembersManager({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedMember(null);
+        setRecentSessions([]);
         setShowStudyStatsModal(false);
       }
     };
@@ -169,27 +170,24 @@ export default function MembersManager({
 
   // Load sessions when a member is selected
   useEffect(() => {
-    if (!selectedMember) {
-      setRecentSessions([]);
-      return;
-    }
+    if (!selectedMember) return;
 
     let isMounted = true;
-    setSessionsLoading(true);
-
-    fetch(`/api/admin/members/${selectedMember.id}/activity`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to load"))))
-      .then((data) => {
+    (async () => {
+      try {
+        setSessionsLoading(true);
+        const res = await fetch(`/api/admin/members/${selectedMember.id}/activity`);
+        if (!res.ok) throw new Error("Failed to load");
+        const data = await res.json();
         if (isMounted) {
           setRecentSessions(data.sessions || []);
         }
-      })
-      .catch(() => {
+      } catch {
         if (isMounted) setRecentSessions([]);
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) setSessionsLoading(false);
-      });
+      }
+    })();
 
     return () => {
       isMounted = false;
@@ -370,7 +368,7 @@ export default function MembersManager({
 
           <label>
             <span>ACTIVITY</span>
-            <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value as any)}>
+            <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value as "all" | "today" | "week" | "no_study_time" | "inactive")}>
               <option value="all">All Activity</option>
               <option value="today">Active Today</option>
               <option value="week">Active This Week</option>
@@ -381,7 +379,7 @@ export default function MembersManager({
 
           <label>
             <span>SORT</span>
-            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)}>
+            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as "newest" | "active" | "study_time" | "name" | "oldest")}>
               <option value="newest">Newest first</option>
               <option value="active">Recently active</option>
               <option value="study_time">Most study time</option>
@@ -514,7 +512,7 @@ export default function MembersManager({
 
       {/* Member Activity Detail Modal */}
       {selectedMember && (
-        <div className="member-detail-backdrop" role="presentation" onClick={() => setSelectedMember(null)}>
+        <div className="member-detail-backdrop" role="presentation" onClick={() => { setSelectedMember(null); setRecentSessions([]); }}>
           <div
             className="member-detail-card"
             role="dialog"
@@ -535,7 +533,7 @@ export default function MembersManager({
               <button
                 type="button"
                 className="member-detail-close"
-                onClick={() => setSelectedMember(null)}
+                onClick={() => { setSelectedMember(null); setRecentSessions([]); }}
                 aria-label="Close activity detail"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

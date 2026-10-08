@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { createBrowserClient } from "@insforge/sdk/ssr";
 import { useState } from "react";
+import { createBrowserClient } from "../../lib/supabase/client";
 import { emptyRichDocument, isRichDocument, legacyDocument, type RichDocument } from "../../flashcards/rich-content";
 
 type Block = RichDocument["blocks"][number];
@@ -44,14 +44,20 @@ export default function RichContentEditor({ name, label, initial, fallback, requ
 
   async function uploadImage(file: File, block: Extract<Block, { type: "image" }>) {
     setError("");
-    if (!file.type.startsWith("image/")) return setError("Choose a JPG, PNG or WebP image.");
+    const allowedMime = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedMime.includes(file.type)) return setError("Choose a JPG, PNG, WebP or GIF image.");
     if (file.size > 5 * 1024 * 1024) return setError("Keep each image under 5 MB.");
     setUploading(true);
     const key = `${crypto.randomUUID()}/${Date.now()}-${cleanName(file.name)}`;
-    const { data, error: uploadError } = await createBrowserClient().storage.from("cue-flashcards").upload(key, file);
+    const supabase = createBrowserClient();
+    const { data, error: uploadError } = await supabase.storage.from("cue-flashcards").upload(key, file, {
+      contentType: file.type,
+      upsert: false,
+    });
     setUploading(false);
     if (uploadError || !data) return setError(uploadError?.message ?? "Image upload failed.");
-    change(block.id, { ...block, url: data.url, key: data.key, alt: block.alt || file.name.replace(/\.[^.]+$/, "") });
+    const { data: { publicUrl } } = supabase.storage.from("cue-flashcards").getPublicUrl(data.path);
+    change(block.id, { ...block, url: publicUrl, key: data.path, alt: block.alt || file.name.replace(/\.[^.]+$/, "") });
   }
 
   return <fieldset className="rich-editor">
@@ -71,7 +77,7 @@ export default function RichContentEditor({ name, label, initial, fallback, requ
       {(block.type === "bulletList" || block.type === "numberList") && <div className="rich-list-editor">{block.items.map((item, itemIndex) => <div key={`${block.id}-${itemIndex}`}><span>{block.type === "numberList" ? `${itemIndex + 1}.` : "•"}</span><input value={item} onChange={(event) => change(block.id, { ...block, items: block.items.map((old, i) => i === itemIndex ? event.target.value : old) })}/><button type="button" onClick={() => change(block.id, { ...block, items: block.items.filter((_, i) => i !== itemIndex) })}>×</button></div>)}<button type="button" onClick={() => change(block.id, { ...block, items: [...block.items, ""] })}>+ List item</button><button type="button" onClick={() => change(block.id, { ...block, type: block.type === "bulletList" ? "numberList" : "bulletList" })}>Use {block.type === "bulletList" ? "numbered" : "bullet"} list</button></div>}
       {block.type === "table" && <div className="rich-table-editor"><div className="rich-table-scroll"><table><tbody>{block.rows.map((row, rowIndex) => <tr key={`${block.id}-${rowIndex}`}>{row.map((cell, cellIndex) => <td key={`${block.id}-${rowIndex}-${cellIndex}`}><input aria-label={`Row ${rowIndex + 1}, column ${cellIndex + 1}`} value={cell} onChange={(event) => change(block.id, { ...block, rows: block.rows.map((oldRow, r) => oldRow.map((oldCell, c) => r === rowIndex && c === cellIndex ? event.target.value : oldCell)) })}/></td>)}</tr>)}</tbody></table></div><div><button type="button" onClick={() => change(block.id, { ...block, rows: [...block.rows, Array(block.rows[0]?.length || 2).fill("")] })}>+ Row</button><button type="button" onClick={() => change(block.id, { ...block, rows: block.rows.map((row) => [...row, ""]) })}>+ Column</button></div></div>}
       {block.type === "formula" && <textarea className="rich-formula-editor" rows={2} value={block.expression} onChange={(event) => change(block.id, { ...block, expression: event.target.value })} placeholder="Example: Current Ratio = Current Assets ÷ Current Liabilities"/>}
-      {block.type === "image" && <div className="rich-image-editor">{block.url ? <img src={block.url} alt={block.alt}/> : <div>IMAGE</div>}<label><span>{uploading ? "Uploading…" : "Choose image"}</span><input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file, block); }}/></label><input value={block.alt} onChange={(event) => change(block.id, { ...block, alt: event.target.value })} placeholder="Image description for accessibility"/><input value={block.caption ?? ""} onChange={(event) => change(block.id, { ...block, caption: event.target.value })} placeholder="Optional caption"/></div>}
+      {block.type === "image" && <div className="rich-image-editor">{block.url ? <img src={block.url} alt={block.alt}/> : <div>IMAGE</div>}<label><span>{uploading ? "Uploading…" : "Choose image"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file, block); }}/></label><input value={block.alt} onChange={(event) => change(block.id, { ...block, alt: event.target.value })} placeholder="Image description for accessibility"/><input value={block.caption ?? ""} onChange={(event) => change(block.id, { ...block, caption: event.target.value })} placeholder="Optional caption"/></div>}
     </div>)}</div>
     {error && <small className="rich-editor-error">{error}</small>}
   </fieldset>;

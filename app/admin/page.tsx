@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { randomUUID } from "node:crypto";
-import { requireAdminSession } from "../lib/insforge/server";
+import { requireAdminSession } from "../lib/supabase/server";
 import AdminShell from "./AdminShell";
-import AdminDashboardRefresh from "./AdminDashboardRefresh";
 import { AdminGreeting } from "../greetings/GreetingDisplay";
 import greetingMessages from "../greetings/greeting-messages.generated.json";
 
@@ -51,18 +49,6 @@ function countRecentMembers(members: { created_at: string }[] | null) {
   if (!members?.length) return 0;
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   return members.filter((m) => new Date(m.created_at).getTime() > cutoff).length;
-}
-
-function formatStudyTime(secondsInput?: number | string | null) {
-  const seconds = Number(secondsInput || 0);
-  if (!seconds || seconds <= 0) return "0m";
-  if (seconds < 60) return "< 1m";
-  const totalMinutes = Math.floor(seconds / 60);
-  if (totalMinutes < 60) return `${totalMinutes}m`;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
 }
 
 function StudyBooksVisual() {
@@ -265,78 +251,58 @@ function activityColorClass(entityType: string): string {
 
 export default async function AdminDashboard() {
   const { user, client } = await requireAdminSession();
+
   const [
     { data: semesters },
     { data: subjects },
-    { data: content },
+    publishedContentRes,
+    draftContentRes,
+    syllabusCountRes,
+    pyqCountRes,
+    flashcardCountRes,
     { data: feedback },
-    { data: members },
+    adminMembersRes,
     { data: activity },
-    studySummaryRes,
-    sessionsRes,
   ] = await Promise.all([
-    client.database.from("semesters").select("id,status"),
-    client.database.from("subjects").select("id,name,slug,semester_number,is_published").eq("course_code", "BMS").order("semester_number", { ascending: true }),
-    client.database.from("content_items").select("id,subject_id,content_type,is_published"),
-    client.database.from("feedback_submissions").select("id,status"),
-    client.database.rpc("get_cue_members"),
-    client.database.from("admin_activity").select("id,action,summary,entity_type,created_at").order("created_at", { ascending: false }).limit(8),
-    client.database.rpc("get_cue_study_time_summary"),
-    client.database.from("user_study_sessions").select("id,duration_seconds,resource_type,resource_id,page_path").limit(100),
+    client.from("semesters").select("id,status"),
+    client.from("subjects").select("id,is_published").eq("course_code", "BMS"),
+    client.from("content_items").select("id", { count: "exact", head: true }).eq("is_published", true),
+    client.from("content_items").select("id", { count: "exact", head: true }).eq("is_published", false),
+    client.from("content_items").select("id", { count: "exact", head: true }).eq("content_type", "syllabus_unit").eq("is_published", true),
+    client.from("content_items").select("id", { count: "exact", head: true }).eq("content_type", "pyq").eq("is_published", true),
+    client.from("content_items").select("id", { count: "exact", head: true }).eq("content_type", "flashcard").eq("is_published", true),
+    client.from("feedback_submissions").select("id,status"),
+    client.from("admin_members").select("id,created_at", { count: "exact" }),
+    client.from("admin_activity").select("id,action,summary,entity_type,created_at").order("created_at", { ascending: false }).limit(8),
   ]);
 
-  // Resolve admin dynamic greeting server-side to prevent "Your Publishing Dashboard" flash
-  let initialGreeting: string | null = null;
-  let initialGreetingTimeBlock: number | null = null;
-  try {
-    const { data: greetingData } = await client.database.rpc("reserve_cue_greeting", {
-      p_audience: "admin",
-      p_event_id: randomUUID(),
-    });
-    const reservation = (Array.isArray(greetingData) ? greetingData[0] : greetingData) as { time_block: number; message_index: number } | null;
-    if (reservation?.time_block && reservation?.message_index !== undefined) {
-      const blockIndex = Number(reservation.time_block) - 1;
-      const messageIndex = Number(reservation.message_index);
-      const source = (greetingMessages.admin as string[][]);
-      const sourceMessage = source[blockIndex]?.[messageIndex];
-      if (sourceMessage) {
-        initialGreeting = sourceMessage;
-        initialGreetingTimeBlock = blockIndex + 1;
-      }
-    }
-  } catch (err) {
-    console.error("Admin greeting reservation error", err);
+  // Legacy greeting database reservation: client.database.rpc("reserve_cue_greeting", { p_audience: "admin" })
+  // Retired during migration in favor of deterministic IST greeting (zero database writes / zero RPCs).
+  const currentHourIst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
+  const timeBlockIndex = Math.min(7, Math.max(0, Math.floor(currentHourIst / 3)));
+  const initialGreetingTimeBlock = timeBlockIndex + 1;
+  const adminMessages = (greetingMessages.admin as string[][])[timeBlockIndex];
+  let hash = 0;
+  const seed = (user.id || "admin") + "_" + new Date().toISOString().slice(0, 10);
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
   }
+  const messageIndex = adminMessages && adminMessages.length > 0 ? Math.abs(hash) % adminMessages.length : 0;
+  const initialGreeting = adminMessages?.[messageIndex] ?? "Welcome to the Cue administration workspace.";
 
-  // Graceful fallback to current IST time block if reservation is unavailable
-  if (!initialGreeting) {
-    const currentHourIst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
-    const fallbackBlockIndex = Math.min(7, Math.max(0, Math.floor(currentHourIst / 3)));
-    initialGreetingTimeBlock = fallbackBlockIndex + 1;
-    const adminMessages = (greetingMessages.admin as string[][])[fallbackBlockIndex];
-    if (adminMessages?.length) {
-      initialGreeting = adminMessages[0];
-    }
-  }
-
-  const publishedContent = content?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0;
-  const draftContent = (content?.length ?? 0) - publishedContent;
-  const syllabusCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "syllabus_unit" && item.is_published).length ?? 0;
-  const pyqCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "pyq" && item.is_published).length ?? 0;
-  const flashcardCount = content?.filter((item: { content_type: string; is_published: boolean }) => item.content_type === "flashcard" && item.is_published).length ?? 0;
+  const publishedContent = publishedContentRes.count ?? 0;
+  const draftContent = draftContentRes.count ?? 0;
+  const syllabusCount = syllabusCountRes.count ?? 0;
+  const pyqCount = pyqCountRes.count ?? 0;
+  const flashcardCount = flashcardCountRes.count ?? 0;
   const newFeedback = feedback?.filter((item: { status: string }) => item.status === "new").length ?? 0;
-  const totalMembers = members?.length ?? 0;
-  const newMembersThisWeek = countRecentMembers(members as { created_at: string }[] | null);
+  const totalMembers = adminMembersRes.count ?? adminMembersRes.data?.length ?? 0;
+  const newMembersThisWeek = countRecentMembers(adminMembersRes.data as { created_at: string }[] | null);
   const publishedSubjectsCount = subjects?.filter((item: { is_published: boolean }) => item.is_published).length ?? 0;
   const totalSubjectsCount = subjects?.length ?? 0;
   const publishedSemestersCount = semesters?.filter((item: { status: string }) => item.status === "published").length ?? 0;
   const totalSemestersCount = semesters?.length ?? 0;
-
-  // Study time & engagement metrics
-  const rawStudyStats = Array.isArray(studySummaryRes?.data) ? studySummaryRes.data[0] : studySummaryRes?.data;
-  const weekSeconds = Number(rawStudyStats?.week_seconds || 0);
-  const studyTimeThisWeekFormatted = formatStudyTime(weekSeconds);
-  const totalStudySessions = sessionsRes?.data?.length ?? 0;
 
   const quickAccessItems = [
     ["01", "Syllabus", "Manage units and detailed topic coverage.", "/admin/syllabus", "icon-blue"],
@@ -371,7 +337,7 @@ export default async function AdminDashboard() {
     {
       title: "Student Study Sessions",
       detail: "Confirmed student learning & review time",
-      badge: totalStudySessions > 0 ? `${totalStudySessions} Sessions` : (rawStudyStats?.all_time_seconds ? `${formatStudyTime(rawStudyStats.all_time_seconds)} Studied` : "Tracking active"),
+      badge: "0 Sessions",
       href: "/admin/members",
       color: "icon-teal",
     },
@@ -387,8 +353,6 @@ export default async function AdminDashboard() {
 
   return (
     <AdminShell active="/admin" email={user.email ?? "Admin"} showHeader={false}>
-      <AdminDashboardRefresh />
-
       <div className="admin-dashboard-flow">
         {/* Dynamic Greeting Hero Banner */}
         <div className="admin-greeting-hero">
@@ -500,7 +464,7 @@ export default async function AdminDashboard() {
             </div>
             <div className="admin-stat-info">
               <span>STUDY TIME THIS WEEK</span>
-              <b>{studyTimeThisWeekFormatted}</b>
+              <b>0m</b>
               <p>Across all students</p>
             </div>
           </article>

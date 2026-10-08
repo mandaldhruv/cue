@@ -1,6 +1,6 @@
 "use server";
 
-import { createInsForgeServerClient } from "../lib/insforge/server";
+import { createServerClient } from "../lib/supabase/server";
 import { notifyAdminFeedback } from "../lib/email/admin-notifications";
 
 export type FeedbackSubmitResult = { ok: boolean; message: string };
@@ -23,8 +23,8 @@ export async function submitFeedback(formData: FormData): Promise<FeedbackSubmit
     return { ok: false, message: "Write between 10 and 1,000 characters." };
   }
 
-  const client = await createInsForgeServerClient();
-  const { data: authData, error: authError } = await client.auth.getCurrentUser();
+  const client = await createServerClient();
+  const { data: authData, error: authError } = await client.auth.getUser();
   const user = authError ? null : authData?.user ?? null;
 
   if (!user) {
@@ -32,9 +32,11 @@ export async function submitFeedback(formData: FormData): Promise<FeedbackSubmit
   }
 
   const userEmail = (user.email || "").trim().toLowerCase();
-  const userName = (user.profile?.name || "").trim() || userEmail.split("@")[0] || "Cue Member";
+  const userName = (user.user_metadata?.name || user.user_metadata?.full_name || (user as { profile?: { name?: string } }).profile?.name || "").trim()
+    || userEmail.split("@")[0]
+    || "Cue Member";
 
-  const { error } = await client.database.from("feedback_submissions").insert([{
+  const { error } = await client.from("feedback_submissions").insert([{
     submission_id: submissionId,
     rating,
     category: "Overall experience",
@@ -51,7 +53,7 @@ export async function submitFeedback(formData: FormData): Promise<FeedbackSubmit
   }]);
 
   if (error) {
-    if (error.message?.toLowerCase().includes("unique")) {
+    if (error.code === "23505" || error.message?.toLowerCase().includes("unique")) {
       return { ok: true, message: "Your feedback was already received." };
     }
     return { ok: false, message: error.message ?? "Feedback could not be sent right now." };

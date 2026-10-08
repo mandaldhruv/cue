@@ -1,4 +1,4 @@
-import { requireAdminSession } from "../../lib/insforge/server";
+import { requireAdminSession } from "../../lib/supabase/server";
 import AdminShell from "../AdminShell";
 import type { FeedbackRecord, TestimonialRecord } from "../types";
 import FeedbackManager from "./FeedbackManager";
@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminFeedbackPage() {
   const { user, client } = await requireAdminSession();
   const [{ data: feedback, error: feedbackError }, { data: testimonials, error: testimonialError }] = await Promise.all([
-    client.database.from("feedback_submissions").select("id,rating,category,message,student_year,email,user_id,user_name,role,is_published,is_content_issue,status,admin_note,created_at").order("created_at", { ascending: false }),
-    client.database.from("testimonials").select("id,feedback_id,person_name,designation,institution,quote,headshot_url,headshot_key,image_alt,rating,is_featured,is_published,consent_confirmed,consent_note,sort_order,created_at").order("is_featured", { ascending: false }).order("sort_order", { ascending: true }),
+    client.from("feedback_submissions").select("id,rating,category,message,student_year,email,user_id,user_name,role,is_published,is_content_issue,status,admin_note,created_at").order("created_at", { ascending: false }),
+    client.from("testimonials").select("id,feedback_id,person_name,designation,institution,quote,headshot_url,headshot_key,image_alt,rating,is_featured,is_published,consent_confirmed,consent_note,sort_order,created_at").order("is_featured", { ascending: false }).order("sort_order", { ascending: true }),
   ]);
   const error = feedbackError ?? testimonialError;
   return <AdminShell active="/admin/feedback" email={user.email ?? "Admin"} title="Feedback & testimonials">

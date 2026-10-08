@@ -1,9 +1,9 @@
 "use client";
 
-import { createBrowserClient } from "@insforge/sdk/ssr";
+import { createBrowserClient } from "../../lib/supabase/client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import type { AdminActionResult, FeedbackRecord, FeedbackStatus, TestimonialRecord } from "../types";
 import { deleteTestimonial, saveTestimonial, updateFeedback, toggleFeedbackPublication, deleteFeedback } from "./actions";
 
@@ -43,6 +43,7 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
   const submittingRef = useRef(false);
   const [pending, startTransition] = useTransition();
 
+  const [prevFeedback, setPrevFeedback] = useState(feedback);
   const [localFeedback, setLocalFeedback] = useState<FeedbackRecord[]>(feedback);
   const [confirmPublishItem, setConfirmPublishItem] = useState<FeedbackRecord | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -50,9 +51,10 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
   const [confirmDeleteItem, setConfirmDeleteItem] = useState<FeedbackRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
+  if (feedback !== prevFeedback) {
+    setPrevFeedback(feedback);
     setLocalFeedback(feedback);
-  }, [feedback]);
+  }
 
   const visibleFeedback = useMemo(() => {
     return localFeedback.filter((item) => {
@@ -203,20 +205,21 @@ export default function FeedbackManager({ feedback, testimonials }: { feedback: 
         return;
       }
       const key = `${formData.get("id") || crypto.randomUUID()}/${crypto.randomUUID()}-${safeName(file.name)}`;
-      const { data, error } = await createBrowserClient().storage.from("cue-testimonials").upload(key, file);
+      const supabase = createBrowserClient();
+      const { data, error } = await supabase.storage.from("cue-testimonials").upload(key, file);
       if (error || !data) {
         setNotice({ ok: false, message: error?.message ?? "Headshot upload failed." });
         setUploading(false);
         submittingRef.current = false;
         return;
       }
-      uploadedKey = data.key;
-      formData.set("headshot_url", data.url);
-      formData.set("headshot_key", data.key);
+      uploadedKey = data.path || (data as { key?: string }).key || key;
+      formData.set("headshot_url", `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/authenticated/cue-testimonials/${uploadedKey}`);
+      formData.set("headshot_key", uploadedKey);
     }
     const result = await saveTestimonial(formData);
     if (!result.ok && uploadedKey) {
-      await createBrowserClient().storage.from("cue-testimonials").remove(uploadedKey);
+      await createBrowserClient().storage.from("cue-testimonials").remove([uploadedKey]);
     }
     setNotice(result);
     if (result.ok) {

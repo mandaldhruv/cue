@@ -1,24 +1,21 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createAuthActions, createServerClient } from "@insforge/sdk/ssr";
-import { isAuthorizedAdminEmail } from "../lib/insforge/server";
+import { createServerClient } from "../lib/supabase/server";
+import { isAuthorizedAdminEmail } from "../lib/admin-auth";
 
 export type AdminAuthState = { error: string; email: string };
 
-async function confirmAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>, email: string) {
+async function confirmAdmin(email: string) {
   if (!isAuthorizedAdminEmail(email)) return false;
-  const client = createServerClient({ cookies: cookieStore });
-  const { data, error } = await client.database.rpc("is_cue_admin");
+  const client = await createServerClient();
+  const { data, error } = await client.rpc("is_cue_admin");
   return !error && data === true;
 }
 
 export async function adminAuthAction(_: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const cookieStore = await cookies();
-  const auth = createAuthActions({ cookies: cookieStore });
 
   if (!email || !password) return { error: "Enter your email and password.", email };
 
@@ -26,12 +23,13 @@ export async function adminAuthAction(_: AdminAuthState, formData: FormData): Pr
     return { error: "This account is not authorized for Cue administration.", email };
   }
 
-  const { data, error } = await auth.signInWithPassword({ email, password });
+  const supabase = await createServerClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data?.user) return { error: "Email or password is incorrect.", email };
 
   const authenticatedEmail = (data.user.email ?? email).trim().toLowerCase();
-  if (!isAuthorizedAdminEmail(authenticatedEmail) || !(await confirmAdmin(cookieStore, authenticatedEmail))) {
-    await auth.signOut();
+  if (!isAuthorizedAdminEmail(authenticatedEmail) || !(await confirmAdmin(authenticatedEmail))) {
+    await supabase.auth.signOut();
     return { error: "This account is not authorized for Cue administration.", email };
   }
 
@@ -39,7 +37,7 @@ export async function adminAuthAction(_: AdminAuthState, formData: FormData): Pr
 }
 
 export async function adminSignOut() {
-  const auth = createAuthActions({ cookies: await cookies() });
-  await auth.signOut();
+  const supabase = await createServerClient();
+  await supabase.auth.signOut();
   redirect("/admin/login");
 }

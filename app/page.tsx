@@ -1,51 +1,68 @@
 import Link from "next/link";
-import { randomUUID } from "node:crypto";
 import { Footer, Navigation, SubjectCard } from "./components";
 import CountUpStats from "./CountUpStats";
 import { HomeHeroHeading } from "./greetings/GreetingDisplay";
 import greetingMessages from "./greetings/greeting-messages.generated.json";
-import { createInsForgeServerClient } from "./lib/insforge/server";
+import { createServerClient } from "./lib/supabase/server";
+import { getPublishedSubjects } from "./lib/public-content";
 import type { Subject } from "./data";
 
 export const dynamic = "force-dynamic";
 
 const accents: Record<string, Subject["accent"]> = { "#E8665B": "coral", "#315DE6": "blue", "#7459E9": "violet", "#299B7D": "mint", "#D58B2A": "amber", "#CF538F": "rose" };
-type GreetingReservation = { time_block: number; message_index: number };
 
 export default async function Home() {
-  const client = await createInsForgeServerClient();
-  const [{ data: subjectRows }, { data: contentRows }, { data: semesterRows }, { data: currentUserData }] = await Promise.all([
-    client.database.from("subjects").select("name,slug,short_code,description,accent_color").eq("course_code", "BMS").eq("is_published", true).order("semester_number", { ascending: true }).order("sort_order", { ascending: true }),
-    client.database.from("content_items").select("id,subject_id,content_type,title,description,body,is_published").in("content_type", ["syllabus_unit", "pyq", "flashcard"]).eq("is_published", true),
-    client.database.from("semesters").select("id,status").eq("course_code", "BMS").eq("status", "published"),
-    client.auth.getCurrentUser(),
+  const client = await createServerClient();
+  const [subjectsResult, { count: contentCount, data: contentRows }, { data: semesterRows }, userResult] = await Promise.all([
+    getPublishedSubjects(),
+    client.from("content_items").select("id", { count: "exact" }).in("content_type", ["syllabus_unit", "pyq", "flashcard"]).eq("is_published", true),
+    client.from("semesters").select("id").eq("course_code", "BMS").eq("status", "published"),
+    client.auth.getUser(),
   ]);
-  const rawInitialName = currentUserData?.user?.profile?.name?.trim().split(/\s+/u)[0]
-    ?? currentUserData?.user?.email?.split("@")[0]?.replace(/[._-]+/gu, " ").trim().split(/\s+/u)[0]
+  const user = userResult.data?.user ?? null;
+  const rawInitialName = user?.user_metadata?.name?.trim().split(/\s+/u)[0]
+    ?? user?.user_metadata?.full_name?.trim().split(/\s+/u)[0]
+    ?? user?.email?.split("@")[0]?.replace(/[._-]+/gu, " ").trim().split(/\s+/u)[0]
     ?? null;
   const initialName = rawInitialName
     ? rawInitialName.charAt(0).toUpperCase() + rawInitialName.slice(1)
     : null;
-  const initialUserId = currentUserData?.user?.id ?? null;
+  const initialUserId = user?.id ?? null;
   let initialGreeting: string | null = null;
   let initialGreetingTimeBlock: number | null = null;
 
+  // Fully deterministic, local greeting determination — zero DB writes, locks, or RPCs
   if (initialUserId && initialName) {
-    const { data: greetingData } = await client.database.rpc("reserve_cue_greeting", {
-      p_audience: "student",
-      p_event_id: randomUUID(),
-    });
-    const reservation = (Array.isArray(greetingData) ? greetingData[0] : greetingData) as GreetingReservation | null;
-    const blockIndex = Number(reservation?.time_block) - 1;
-    const messageIndex = Number(reservation?.message_index);
-    const sourceMessage = greetingMessages.student[blockIndex]?.[messageIndex];
-
-    if (sourceMessage) {
+    const currentHourIst = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    ).getHours();
+    const blockIndex = Math.min(7, Math.max(0, Math.floor(currentHourIst / 3)));
+    initialGreetingTimeBlock = blockIndex + 1;
+    const messages = greetingMessages.student[blockIndex];
+    if (messages && messages.length > 0) {
+      let hash = 0;
+      const seed = initialUserId + "_" + new Date().toISOString().slice(0, 10);
+      for (let i = 0; i < seed.length; i++) {
+        hash = (hash << 5) - hash + seed.charCodeAt(i);
+        hash |= 0;
+      }
+      const messageIndex = Math.abs(hash) % messages.length;
+      const sourceMessage = messages[messageIndex] ?? messages[0];
       initialGreeting = sourceMessage.replaceAll("[Name]", initialName);
-      initialGreetingTimeBlock = blockIndex + 1;
     }
   }
-  const subjects: Subject[] = (subjectRows ?? []).map((item: { name: string; slug: string; short_code: string; description: string; accent_color: string }) => ({ slug: item.slug, code: item.short_code, name: item.name, shortName: item.name, description: item.description, accent: accents[item.accent_color.toUpperCase()] ?? "blue", units: [], papers: 0 }));
+
+  const subjects: Subject[] = (subjectsResult.subjects ?? []).map((item) => ({
+    slug: item.slug,
+    code: item.short_code,
+    name: item.name,
+    shortName: item.name,
+    description: item.description,
+    accent: accents[item.accent_color.toUpperCase()] ?? "blue",
+    units: [],
+    papers: 0,
+  }));
+
   return <>
     <Navigation />
     <main>
@@ -61,7 +78,7 @@ export default async function Home() {
               initialTimeBlock={initialGreetingTimeBlock}
             />
             <p>Semester-wise syllabus, PYQs and flashcards, created around what BMS students actually need.</p>
-            <CountUpStats subjects={subjects.length} resources={contentRows?.length ?? 0} semesters={semesterRows?.length ?? 0}/>
+            <CountUpStats subjects={subjects.length} resources={contentCount ?? contentRows?.length ?? 0} semesters={semesterRows?.length ?? 0}/>
           </div>
           <div className="hero-study-panel">
             <div className="hero-panel-head"><span>START STUDYING</span><small>BMS · SEMESTER 3</small></div>

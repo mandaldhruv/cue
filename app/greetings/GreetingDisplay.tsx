@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import greetingMessages from "./greeting-messages.generated.json";
 
 type Audience = "admin" | "student";
 
@@ -27,12 +28,36 @@ function getSalutation(timeBlock: number | null, message: string | null) {
   return normalizedMessage.startsWith(normalizedSalutation) ? "Welcome back," : salutation;
 }
 
+function getDeterministicStudentGreeting(userId: string, name: string): GreetingState {
+  const currentHourIst = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  ).getHours();
+  const blockIndex = Math.min(7, Math.max(0, Math.floor(currentHourIst / 3)));
+  const messages = greetingMessages.student[blockIndex];
+  let hash = 0;
+  const seed = userId + "_" + new Date().toISOString().slice(0, 10);
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const messageIndex = messages && messages.length > 0 ? Math.abs(hash) % messages.length : 0;
+  const rawMessage = messages?.[messageIndex] ?? "[Name], welcome back.";
+  return {
+    userId,
+    message: rawMessage.replaceAll("[Name]", name),
+    timeBlock: blockIndex + 1,
+  };
+}
+
 function useGreeting(audience: Audience, initialGreeting: GreetingState | null = null) {
   const { user, loading } = useAuth();
   const [greeting, setGreeting] = useState<GreetingState | null>(initialGreeting);
   const [eventId] = useState(() => typeof crypto === "undefined" ? "" : crypto.randomUUID());
 
   useEffect(() => {
+    // Student greetings are 100% deterministic and local — zero API or DB requests
+    if (audience === "student") return;
+
     if (loading || !user || !eventId || greeting?.userId === user.id) return;
 
     const controller = new AbortController();
@@ -88,12 +113,16 @@ export function HomeHeroHeading({
   const initialGreeting = initialUserId && initialMessage
     ? { userId: initialUserId, message: initialMessage, timeBlock: initialTimeBlock ?? 7 }
     : null;
-  const { message, user, loading } = useGreeting("student", initialGreeting);
+  const { message: fetchedMessage, user, loading } = useGreeting("student", initialGreeting);
   const signedInName = loading
     ? initialName
     : user
       ? firstName(user.profile?.name || user.email.split("@")[0])
       : null;
+
+  const resolvedMessage = fetchedMessage || (user && signedInName
+    ? getDeterministicStudentGreeting(user.id, signedInName).message
+    : null);
 
   if (!signedInName && !loading) {
     return <h1>Your complete<br /><em>BMS study space.</em></h1>;
@@ -103,11 +132,11 @@ export function HomeHeroHeading({
     return <h1>Your complete<br /><em>BMS study space.</em></h1>;
   }
 
-  if (!message) {
+  if (!resolvedMessage) {
     return <h1 className="hero-greeting-title hero-greeting-pending" aria-label={`Loading a greeting for ${firstName(signedInName)}`}><span /></h1>;
   }
 
-  return <h1 className="hero-greeting-title" aria-live="polite">{message}</h1>;
+  return <h1 className="hero-greeting-title" aria-live="polite">{resolvedMessage}</h1>;
 }
 
 export function AdminGreeting({

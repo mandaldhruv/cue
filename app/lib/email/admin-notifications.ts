@@ -1,4 +1,4 @@
-import { createInsForgeServerClient } from "../insforge/server";
+import { createServerClient } from "../supabase/server";
 
 export interface NewMemberNotificationData {
   userId: string;
@@ -22,7 +22,7 @@ export interface FeedbackNotificationData {
 }
 
 function getSiteUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL || "https://h36y6svq.insforge.site";
+  const url = process.env.NEXT_PUBLIC_SITE_URL || "https://cue.study";
   return url.replace(/\/$/, "");
 }
 
@@ -164,8 +164,8 @@ async function recordAndCheckDuplicate(
   subject: string
 ): Promise<boolean> {
   try {
-    const client = await createInsForgeServerClient();
-    const { data: existing } = await client.database
+    const client = await createServerClient();
+    const { data: existing, error: selectError } = await client
       .from("admin_email_logs")
       .select("id")
       .eq("event_type", eventType)
@@ -176,15 +176,17 @@ async function recordAndCheckDuplicate(
       return false; // Already sent, prevent duplicate!
     }
 
-    await client.database.from("admin_email_logs").insert([
-      {
-        event_type: eventType,
-        related_id: relatedId,
-        recipient,
-        subject,
-        status: "sent",
-      },
-    ]);
+    if (!selectError) {
+      await client.from("admin_email_logs").insert([
+        {
+          event_type: eventType,
+          related_id: relatedId,
+          recipient,
+          subject,
+          status: "sent",
+        },
+      ]);
+    }
 
     return true; // Not duplicate, safe to send
   } catch {

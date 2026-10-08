@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import greetingMessages from "../../greetings/greeting-messages.generated.json";
-import { createInsForgeServerClient, isAuthorizedAdminEmail } from "../../lib/insforge/server";
+import { createServerClient, isAuthorizedAdminEmail } from "../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid greeting request." }, { status: 400 });
     }
 
-    const client = await createInsForgeServerClient();
-    const { data: userData, error: userError } = await client.auth.getCurrentUser();
+    const client = await createServerClient();
+    const { data: userData, error: userError } = await client.auth.getUser();
     const user = userError ? null : userData?.user ?? null;
     if (!user) return new NextResponse(null, { status: 401 });
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data, error } = await client.database.rpc("reserve_cue_greeting", {
+    const { data, error } = await client.rpc("reserve_cue_greeting", {
       p_audience: audience,
       p_event_id: eventId,
     });
